@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bread Connection - Financial Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <style>
+        /* CSS Variables - Google Sheets Cyan Palette */
+        :root {
+            --cyan-dark2: #0C343D;
+            --cyan-dark1: #134F5C;
+            --cyan-base: #45818E;
+            --cyan-light1: #76A5AF;
+            --cyan-light2: #A2C4C9;
+            --cyan-light3: #D0E0E3;
+            --accent-gold: #d4a843;
+            --accent-rose: #f4cccc;
+            --accent-red: #e06666;
+            --accent-mauve: #744848;
+            --accent-charcoal: #5b5b5b;
+            --positive: #2c7a3a;
+            --negative: #c43c3c;
+            --white: #ffffff;
+            --gray-light: #f0f6f7;
+            --gray-border: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--white);
+            color: var(--cyan-dark2);
+            line-height: 1.5;
+        }
+
+        /* Mobile Block */
+        @media (max-width: 899px) {
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: var(--white);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            body {
+                overflow: hidden;
+            }
+        }
+
+        .mobile-block {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--white);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 899px) {
+            .mobile-block {
+                display: flex;
+                flex-direction: column;
+            }
+            #main-container {
+                display: none !important;
+            }
+        }
+
+        .mobile-block h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--cyan-dark1);
+        }
+
+        .mobile-block p {
+            font-size: 16px;
+            color: var(--cyan-base);
+            max-width: 400px;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--cyan-dark1);
+            color: var(--white);
+            padding: 10px 30px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 12px;
+            opacity: 0.85;
+        }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--cyan-light3);
+            background-color: var(--white);
+            padding: 0 30px;
+            overflow-x: auto;
+        }
+
+        .tab-nav button {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--cyan-base);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 15px 20px;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tab-nav button:hover {
+            color: var(--cyan-dark1);
+        }
+
+        .tab-nav button.active {
+            color: var(--cyan-dark1);
+            border-bottom-color: var(--cyan-dark1);
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            padding: 15px 30px;
+            background-color: #fafbfc;
+            border-bottom: 1px solid var(--gray-border);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-bar label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--cyan-dark2);
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-border);
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            background-color: var(--white);
+            color: var(--cyan-dark2);
+            cursor: pointer;
+        }
+
+        .filter-bar select:focus,
+        .filter-bar input:focus {
+            outline: none;
+            border-color: var(--cyan-dark1);
+            box-shadow: 0 0 0 2px rgba(19, 79, 92, 0.1);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch input[type="checkbox"] {
+            width: 40px;
+            height: 24px;
+            cursor: pointer;
+            appearance: none;
+            background-color: #ccc;
+            border-radius: 12px;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-switch input[type="checkbox"]:checked {
+            background-color: var(--cyan-base);
+        }
+
+        .toggle-switch input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--white);
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch input[type="checkbox"]:checked::before {
+            left: 18px;
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+        }
+
+        .spinner {
+            border: 4px solid var(--cyan-light3);
+            border-top: 4px solid var(--cyan-dark1);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, 60px);
+            font-size: 14px;
+            color: var(--cyan-base);
+        }
+
+        /* Error Banner */
+        .error-banner {
+            background-color: #ffebee;
+            border-left: 4px solid var(--negative);
+            padding: 15px 20px;
+            margin: 15px 30px;
+            border-radius: 4px;
+            color: var(--negative);
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-banner.show {
+            display: block;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Per-tab accent colors */
+        /* Monthly Overview — gold accent */
+        #monthly-overview .kpi-card h3 { color: var(--accent-gold); }
+        #monthly-overview .kpi-card { border-top: 3px solid var(--accent-gold); }
+        #monthly-overview .table-container { border-top: 3px solid var(--accent-gold); }
+        #monthly-overview .chart-container { border-top: 3px solid var(--accent-gold); }
+
+        /* Accrual P&L — mauve/rose accent */
+        #profit-loss .kpi-card h3 { color: var(--accent-mauve); }
+        #profit-loss .kpi-card { border-top: 3px solid var(--accent-rose); }
+        #profit-loss .section-header-row td { background-color: var(--accent-rose); color: var(--accent-mauve); border-left: 4px solid var(--accent-mauve); }
+        #profit-loss .profit-row { background-color: var(--accent-rose); }
+        #profit-loss .profit-row td:first-child { color: var(--accent-mauve); }
+
+        /* Expense Analysis — red accent */
+        #expenses .kpi-card h3 { color: var(--accent-red); }
+        #expenses .chart-container { border-top: 3px solid var(--accent-red); }
+        #expenses .chart-container h3 { color: var(--accent-mauve); }
+        #expenses .table-container { border-top: 3px solid var(--accent-red); }
+
+        /* Key Accounts — charcoal accent */
+        #key-accounts .chart-container { border-top: 3px solid var(--accent-charcoal); }
+        #key-accounts .chart-container h3 { color: var(--accent-charcoal); }
+        #key-accounts .table-container { border-top: 3px solid var(--accent-charcoal); }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background-color: var(--white);
+            border: 1px solid var(--gray-border);
+            border-radius: 8px;
+            padding: 15px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .kpi-card h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--cyan-base);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--cyan-dark2);
+            margin-bottom: 5px;
+        }
+
+        .kpi-card .subtitle {
+            font-size: 12px;
+            color: var(--cyan-base);
+        }
+
+        .kpi-card.positive .value {
+            color: var(--positive);
+        }
+
+        .kpi-card.negative .value {
+            color: var(--negative);
+        }
+
+        /* Tables */
+        .table-container {
+            background-color: var(--white);
+            border: 1px solid var(--gray-border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        .pl-scroll {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: calc(100vh - 300px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background-color: var(--cyan-dark1);
+            color: var(--white);
+        }
+
+        th {
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 3;
+        }
+
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        tbody tr:nth-child(even):not(.total-row):not(.profit-row):not(.category-row):not(.subcategory-row):not(.section-header-row) {
+            background-color: #f8fafa;
+        }
+
+        tbody tr.total-row {
+            background-color: var(--cyan-dark2);
+            color: var(--white);
+            font-weight: 700;
+        }
+
+        tbody tr.total-row td {
+            border-bottom-color: var(--cyan-dark1);
+        }
+
+        tbody tr.category-row {
+            background-color: var(--white);
+            font-weight: 400;
+            cursor: pointer;
+        }
+
+        tbody tr.category-row:hover {
+            background-color: #f0f6f7;
+        }
+
+        tbody tr.category-row td {
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        tbody tr.subcategory-row {
+            display: none;
+            background-color: transparent !important;
+            font-size: 12px;
+            color: #555;
+        }
+
+        tbody tr.subcategory-row td:first-child {
+            padding-left: 28px;
+            font-style: italic;
+        }
+
+        tbody tr.subcategory-row.visible {
+            display: table-row;
+        }
+
+        tbody tr.profit-row {
+            background-color: var(--cyan-light3);
+            font-weight: 700;
+        }
+
+        tbody tr.section-header-row td {
+            background-color: var(--cyan-light2);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--cyan-dark2);
+            padding: 6px 12px;
+        }
+
+        /* Numbers */
+        .number {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .number.positive {
+            color: var(--positive);
+        }
+
+        .number.negative {
+            color: var(--negative);
+        }
+
+        .percentage {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Net before tax note */
+        .net-note {
+            font-size: 11px;
+            color: var(--cyan-light1);
+            padding: 4px 30px 8px;
+            margin-top: -4px;
+        }
+
+        /* Charts */
+        .chart-container {
+            background-color: var(--white);
+            border: 1px solid var(--gray-border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-container h3 {
+            flex-shrink: 0;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--cyan-dark2);
+        }
+
+        .chart-container canvas {
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Summary Boxes */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-box {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid var(--cyan-dark1);
+        }
+
+        .summary-box label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--cyan-base);
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .summary-box .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--cyan-dark2);
+        }
+
+        /* Section Header */
+        .section-header {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--cyan-dark1);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Divider */
+        .divider {
+            height: 2px;
+            background-color: var(--cyan-light3);
+            margin: 20px 0;
+        }
+
+        /* Utility */
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: var(--cyan-light1);
+            font-size: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: var(--cyan-light1);
+            color: var(--white);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-block">
+        <h1>📊 Dashboard</h1>
+        <p>This dashboard is optimized for desktop viewing. Please access it from a device with a screen width of 900px or larger.</p>
+    </div>
+
+    <div id="main-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🍞 Bread Connection Financial Dashboard</h1>
+            <p>Live data from Google Sheets &nbsp;•&nbsp; Last updated: <span id="last-update">Loading...</span></p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-button active" data-tab="monthly-overview">Monthly Overview</button>
+            <button class="tab-button" data-tab="profit-loss">Accrual P&L</button>
+            <button class="tab-button" data-tab="expenses">Expense Analysis</button>
+            <button class="tab-button" data-tab="key-accounts">Key Accounts</button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar" id="filter-bar">
+            <!-- Contextual filters will be inserted here -->
+        </div>
+
+        <!-- Error Banner -->
+        <div class="error-banner" id="error-banner"></div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loading-overlay">
+            <div class="spinner"></div>
+            <div class="spinner-text">Fetching data from Google Sheets...</div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Tab 1: Monthly Overview -->
+            <div class="tab-content active" id="monthly-overview">
+                <p class="net-note" id="monthly-net-note">All figures are net amounts before tax</p>
+                <div class="kpi-grid" id="monthly-kpi-grid"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <div class="table-container" style="margin-bottom: 0;">
+                        <h3 style="padding: 15px 12px 0 12px; font-size: 15px; font-weight: 600; color: var(--cyan-dark2);">Top 10 Accounts</h3>
+                        <table id="monthly-accounts-table">
+                            <thead>
+                                <tr>
+                                    <th>Account</th>
+                                    <th class="number">Total</th>
+                                    <th class="percentage">Share %</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="chart-container" style="margin-bottom: 0; height: 320px;">
+                        <h3>Revenue by Channel — Last 6 Months</h3>
+                        <canvas id="channel-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Profit & Loss -->
+            <div class="tab-content" id="profit-loss">
+                <p class="net-note">All figures are net amounts before tax &nbsp;•&nbsp; Accrual basis</p>
+                <div class="kpi-grid" id="pl-kpi-grid"></div>
+                <div class="filter-bar-pl" id="filter-bar-pl"></div>
+                <div class="table-container">
+                    <div class="pl-scroll">
+                        <table id="pl-table"></table>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Tab 4: Expenses -->
+            <div class="tab-content" id="expenses">
+                <p class="net-note">All figures are net amounts before tax &nbsp;•&nbsp; Accrual basis</p>
+                <div id="expenses-content"></div>
+            </div>
+
+            <!-- Tab 5: Key Accounts -->
+            <div class="tab-content" id="key-accounts">
+                <p class="net-note">All figures are net amounts before tax</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                    <div class="chart-container" style="margin-bottom:0;height:360px;">
+                        <h3>Top Accounts Revenue Proportion</h3>
+                        <canvas id="accounts-pie-chart"></canvas>
+                    </div>
+                    <div class="chart-container" style="margin-bottom:0;height:360px;">
+                        <h3>Client Categories Breakdown</h3>
+                        <canvas id="client-categories-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container" style="height:300px;">
+                    <h3>Siam Rivea Louis Vuitton — Last 6 Months</h3>
+                    <canvas id="siam-rivea-chart"></canvas>
+                </div>
+                <div class="table-container">
+                    <h3 style="padding: 15px 12px 0 12px; font-size: 15px; font-weight: 600; color: var(--cyan-dark2);">Top 10 Accounts</h3>
+                    <div class="table-scroll">
+                        <table id="key-accounts-table"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // CONFIGURATION & CONSTANTS
+        // ============================================================================
+        const API_KEY = 'AIzaSyDqdoKrfUor7TS0XKM5l1SB_kYrVSFgt40';
+        const SHEET_ID = '18VgoCI2jqPPOu7zc3POLHnRcVP13krHmW6PCTj_Ivd4';
+        const SHEET_TABS = {
+            INC: 'INC',
+            EXP: 'EXP',
+            PC_SUMMARY: 'PC_SUMMARY',
+            STATEMENTS: 'STATEMENTS',
+            CLIENTS: 'CLIENTS'
+        };
+
+        // Chart of Accounts Hierarchy
+        const CHART_OF_ACCOUNTS = {
+            revenue: [
+                { code: null, label: 'Revenue', children: [
+                    { code: 'PO_SALES', label: 'PO Sales' },
+                    { code: 'BRANCH_SALES', label: 'Branch Sales' },
+                    { code: 'DIRECT_SALES', label: 'Direct Sales' }
+                ] }
+            ],
+            opex: [
+                { code: '5010', label: 'Cost of Goods Sold', children: [
+                    { code: '5011', label: 'Ingredients' },
+                    { code: '5013', label: 'Retail Items' },
+                    { code: '5015', label: 'Rebate' },
+                    { code: '5017', label: 'Kad Kokoa' }
+                ] },
+                { code: '6010', label: 'Payroll', children: [
+                    { code: '6012', label: 'Salaries - Office' },
+                    { code: '6013', label: 'Salaries - Production' },
+                    { code: '6014', label: 'Salaries - Ops Support' },
+                    { code: '6015', label: 'Bonus & Overtime' },
+                    { code: '6016', label: 'Consultant Fees' },
+                    { code: '6017', label: 'Wages - Part Timers' },
+                    { code: '6018', label: 'Management Fee' }
+                ] },
+                { code: '6020', label: 'Benefits', children: [
+                    { code: '6021', label: 'Meal Allowance' },
+                    { code: '6022', label: 'Group Insurance' },
+                    { code: '6023', label: 'Social Security' },
+                    { code: '6025', label: 'Diligence Allowance' },
+                    { code: '6028', label: 'Recruitment' }
+                ] },
+                { code: '7010', label: 'Supplies', children: [
+                    { code: '7011', label: 'Kitchen' },
+                    { code: '7012', label: 'Cleaning' },
+                    { code: '7013', label: 'Office' },
+                    { code: '7015', label: 'Packaging' },
+                    { code: '7018', label: 'Staff Uniforms' }
+                ] },
+                { code: '7020', label: 'Operational Equipment', children: [
+                    { code: '7021', label: 'Bakeware' },
+                    { code: '7025', label: 'Small Kitchen Equip' },
+                    { code: '7029', label: 'Office Equip' }
+                ] },
+                { code: '8020', label: 'Marketing', children: [
+                    { code: '8021', label: 'Media Advertising' },
+                    { code: '8025', label: 'Graphic Design' }
+                ] },
+                { code: '8110', label: 'Maintenance', children: [
+                    { code: '8111', label: 'Preventive' },
+                    { code: '8112', label: 'Operational Equip' },
+                    { code: '8113', label: 'IT' },
+                    { code: '8114', label: 'M&E & Building' },
+                    { code: '8117', label: 'Tools & Materials' }
+                ] },
+                { code: '8120', label: 'Other Operating', children: [
+                    { code: '8122', label: 'Transportation' },
+                    { code: '8123', label: 'Pest Control' },
+                    { code: '8127', label: 'Delivery Vehicle' },
+                    { code: '8128', label: 'Other' }
+                ] },
+                { code: '8210', label: 'Admin', children: [
+                    { code: '8211', label: 'Work Permit' },
+                    { code: '8212', label: 'Insurance' },
+                    { code: '8213', label: 'Accounting' },
+                    { code: '8214', label: 'Bank Charges' },
+                    { code: '8215', label: 'Other Admin' }
+                ] },
+                { code: '8310', label: 'Utilities', children: [
+                    { code: '8311', label: 'Gas' },
+                    { code: '8314', label: 'Electricity' },
+                    { code: '8315', label: 'Water' },
+                    { code: '8316', label: 'Telephone' },
+                    { code: '8318', label: 'Software' }
+                ] },
+                { code: '8410', label: 'Occupancy', children: [
+                    { code: '8411', label: 'Monthly Rental' },
+                    { code: '8412', label: 'Rental Compensation' },
+                    { code: '8413', label: 'Branch Rental' },
+                    { code: '8414', label: 'Property Tax' }
+                ] }
+            ],
+            nonop: [
+                { code: '9010', label: 'Tax Payable', children: [
+                    { code: '9011', label: 'VAT PP30' },
+                    { code: '9012', label: 'WHT' },
+                    { code: '9013', label: 'Income Tax PND1' },
+                    { code: '9014', label: 'Corp Income Tax' }
+                ] },
+                { code: '9020', label: 'CAPEX', children: [
+                    { code: '9021', label: 'Kitchen Equipment' },
+                    { code: '9022', label: 'FF&E' },
+                    { code: '9023', label: 'Renovations' },
+                    { code: '9024', label: 'Technology' },
+                    { code: '9025', label: 'HVAC' }
+                ] },
+                { code: '9030', label: 'Financial Activities', children: [
+                    { code: '9031', label: 'Dividends' },
+                    { code: '9032', label: 'Director\'s Loan Refund' },
+                    { code: '9033', label: 'Interests' }
+                ] },
+                { code: '9040', label: 'Other Assets', children: [
+                    { code: '9041', label: 'Rental Deposit' }
+                ] }
+            ]
+        };
+
+        // Colors for charts
+        const CHART_COLORS = [
+            '#134F5C', '#45818E', '#76A5AF', '#A2C4C9', '#d4a843',
+            '#0C343D', '#D0E0E3', '#2c7a3a', '#c43c3c', '#e07020',
+            '#6a5acd', '#20b2aa', '#cd853f', '#708090', '#da70d6'
+        ];
+
+        // Global state
+        let allData = {
+            inc: [],
+            exp: [],
+            pc_summary: [],
+            statements: [],
+            clients: []
+        };
+
+        let processedData = {
+            monthlyRevenue: {},      // { 'YYYY-MM': { date, accounts: {}, total, lastRecordDate } }
+            monthlyExpenses: {},     // { 'YYYY-MM': { categories: {}, total } }
+            monthlyExpensesByMain: {}, // { 'YYYY-MM': { mainCode: amount } }
+            monthlyPCByMain: {},     // { 'YYYY-MM': { mainCode: amount } }
+            monthlyIncome: {},       // By sales type
+            monthlyCashFlow: {},     // { 'YYYY-MM': { inflows, outflows, balance } }
+            topAccounts: [],         // Top 10 accounts with revenue
+            clientCategories: {}     // Client category mapping
+        };
+
+        let currentTab = 'monthly-overview';
+        let selectedMonth = null;
+        let showYoY = false;
+        let showAfterTax = false;
+        let showSRLV = true;
+
+        // ============================================================================
+        // UTILITY FUNCTIONS
+        // ============================================================================
+
+        function formatNumber(num) {
+            if (num === null || num === undefined || num === 0) return '';
+            return Math.round(num).toLocaleString('en-US');
+        }
+
+        function formatCurrency(num) {
+            if (num === null || num === undefined || num === 0) return '';
+            return '฿' + Math.round(num).toLocaleString('en-US');
+        }
+
+        function parseNumber(str) {
+            if (!str) return 0;
+            if (typeof str === 'number') return str;
+            return parseFloat(str.toString().replace(/,/g, '')) || 0;
+        }
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            // Formats: "1 January 2024" or "15/02/2024"
+            if (dateStr.includes('/')) {
+                const [d, m, y] = dateStr.split('/');
+                return new Date(y, m - 1, d);
+            } else {
+                return new Date(dateStr);
+            }
+        }
+
+        function getMonthKey(month, year) {
+            return `${year}-${String(month).padStart(2, '0')}`;
+        }
+
+        function getCurrentDate() {
+            return new Date();
+        }
+
+        function isIncompleteMonth(month, year) {
+            const now = getCurrentDate();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            return year === currentYear && month === currentMonth;
+        }
+
+        function showError(message) {
+            const banner = document.getElementById('error-banner');
+            banner.textContent = message;
+            banner.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('error-banner').classList.remove('show');
+        }
+
+        function getLastDayOfMonth(month, year) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        // ============================================================================
+        // GOOGLE SHEETS API
+        // ============================================================================
+
+        async function fetchSheetData(tabName, range = '') {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${tabName}${range ? '!' + range : ''}?key=${API_KEY}`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                return data.values || [];
+            } catch (error) {
+                console.error(`Error fetching ${tabName}:`, error);
+                throw error;
+            }
+        }
+
+        async function loadAllData() {
+            try {
+                const [inc, exp, pc_summary, statements, clients] = await Promise.all([
+                    fetchSheetData(SHEET_TABS.INC),
+                    fetchSheetData(SHEET_TABS.EXP),
+                    fetchSheetData(SHEET_TABS.PC_SUMMARY),
+                    fetchSheetData(SHEET_TABS.STATEMENTS),
+                    fetchSheetData(SHEET_TABS.CLIENTS)
+                ]);
+
+                allData = { inc, exp, pc_summary, statements, clients };
+                hideError();
+                return true;
+            } catch (error) {
+                showError('Failed to fetch data from Google Sheets. Please check your connection and try refreshing the page.');
+                return false;
+            }
+        }
+
+        // ============================================================================
+        // DATA PROCESSING
+        // ============================================================================
+
+        function processIncomeData() {
+            processedData.monthlyRevenue = {};
+            processedData.monthlyIncome = {};
+            processedData.topAccounts = {};
+
+            allData.inc.forEach((row, idx) => {
+                if (idx === 0) return; // Skip header
+
+                const month = parseNumber(row[0]);
+                const year = parseNumber(row[1]);
+                const transactionDate = row[2];
+                const salesType = row[3];
+                const accountName = row[4];
+                const netAmount = parseNumber(row[6]);
+                const grossAmount = parseNumber(row[13]); // Col N = amount including tax
+
+                if (!month || !year || !netAmount) return;
+
+                const monthKey = getMonthKey(month, year);
+
+                // Initialize month if needed
+                if (!processedData.monthlyRevenue[monthKey]) {
+                    processedData.monthlyRevenue[monthKey] = {
+                        date: `${year}-${String(month).padStart(2, '0')}`,
+                        month,
+                        year,
+                        accounts: {},
+                        byChannel: {},
+                        total: 0,
+                        totalWithTax: 0,
+                        lastRecordDate: transactionDate
+                    };
+                }
+
+                // Update last record date (keep the latest)
+                if (transactionDate) {
+                    const newDate = parseDate(transactionDate);
+                    const existingDate = parseDate(processedData.monthlyRevenue[monthKey].lastRecordDate);
+                    if (!existingDate || (newDate && newDate > existingDate)) {
+                        processedData.monthlyRevenue[monthKey].lastRecordDate = transactionDate;
+                    }
+                }
+
+                // Track by account
+                if (accountName) {
+                    if (!processedData.monthlyRevenue[monthKey].accounts[accountName]) {
+                        processedData.monthlyRevenue[monthKey].accounts[accountName] = 0;
+                    }
+                    processedData.monthlyRevenue[monthKey].accounts[accountName] += netAmount;
+
+                    // Track for top accounts
+                    if (!processedData.topAccounts[accountName]) {
+                        processedData.topAccounts[accountName] = 0;
+                    }
+                    processedData.topAccounts[accountName] += netAmount;
+                }
+
+                // Track by channel
+                if (salesType) {
+                    if (!processedData.monthlyRevenue[monthKey].byChannel[salesType]) {
+                        processedData.monthlyRevenue[monthKey].byChannel[salesType] = 0;
+                    }
+                    processedData.monthlyRevenue[monthKey].byChannel[salesType] += netAmount;
+                }
+
+                processedData.monthlyRevenue[monthKey].total += netAmount;
+                processedData.monthlyRevenue[monthKey].totalWithTax += (grossAmount || netAmount);
+            });
+
+            // Sort top accounts
+            processedData.topAccounts = Object.entries(processedData.topAccounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, amount]) => ({ name, amount }));
+        }
+
+        function processExpenseData() {
+            processedData.monthlyExpenses = {};
+            processedData.monthlyExpensesByMain = {};
+
+            allData.exp.forEach((row, idx) => {
+                if (idx === 0) return; // Skip header
+
+                const purchasingPeriod = row[2]; // Use purchasing period for accrual
+                const mainCode = row[5];
+                const subCode = row[4];
+                const netAmount = parseNumber(row[8]);
+
+                if (!purchasingPeriod || !netAmount) return;
+
+                const date = parseDate(purchasingPeriod);
+                if (!date) return;
+
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
+                const monthKey = getMonthKey(month, year);
+
+                if (!processedData.monthlyExpenses[monthKey]) {
+                    processedData.monthlyExpenses[monthKey] = {};
+                }
+                if (!processedData.monthlyExpensesByMain[monthKey]) {
+                    processedData.monthlyExpensesByMain[monthKey] = {};
+                }
+
+                // Track by subcategory
+                if (subCode) {
+                    if (!processedData.monthlyExpenses[monthKey][subCode]) {
+                        processedData.monthlyExpenses[monthKey][subCode] = 0;
+                    }
+                    processedData.monthlyExpenses[monthKey][subCode] += netAmount;
+                }
+
+                // Track by main category
+                if (mainCode && !mainCode.toString().startsWith('2000')) { // Exclude 2000 range
+                    const mainCodeStr = mainCode.toString().slice(0, 4); // Get main code (5010, 6010, etc)
+                    if (!processedData.monthlyExpensesByMain[monthKey][mainCodeStr]) {
+                        processedData.monthlyExpensesByMain[monthKey][mainCodeStr] = 0;
+                    }
+                    processedData.monthlyExpensesByMain[monthKey][mainCodeStr] += netAmount;
+                }
+            });
+        }
+
+        function processPCData() {
+            processedData.monthlyPCByMain = {};
+
+            if (allData.pc_summary.length < 3) return;
+
+            const yearRow = allData.pc_summary[0];
+            const monthRow = allData.pc_summary[1];
+
+            // Parse header to find year-month columns
+            const monthColumns = {}; // { colIndex: 'YYYY-MM' }
+            for (let col = 4; col < yearRow.length; col++) {
+                const year = parseNumber(yearRow[col]);
+                const month = parseNumber(monthRow[col]);
+                if (year && month) {
+                    const monthKey = getMonthKey(month, year);
+                    monthColumns[col] = monthKey;
+                }
+            }
+
+            // Parse data rows (starting from row 10 for categories)
+            for (let rowIdx = 9; rowIdx < allData.pc_summary.length; rowIdx++) {
+                const row = allData.pc_summary[rowIdx];
+                const mainCode = row[0];
+                const subCode = row[1];
+
+                if (!mainCode || mainCode.toString().startsWith('2000')) continue; // Exclude cash withdrawals
+
+                // Get the main code properly
+                // PC_SUMMARY uses '5000' for COGS parent; EXP uses '5010' — remap to align
+                let mainCodeStr = mainCode.toString().slice(0, 4);
+                if (mainCodeStr === '5000') mainCodeStr = '5010';
+
+                // For each month column, add the PC expense
+                Object.entries(monthColumns).forEach(([colIdx, monthKey]) => {
+                    const amount = parseNumber(row[parseInt(colIdx)]);
+                    if (amount) {
+                        if (!processedData.monthlyPCByMain[monthKey]) {
+                            processedData.monthlyPCByMain[monthKey] = {};
+                        }
+                        if (!processedData.monthlyPCByMain[monthKey][mainCodeStr]) {
+                            processedData.monthlyPCByMain[monthKey][mainCodeStr] = 0;
+                        }
+                        processedData.monthlyPCByMain[monthKey][mainCodeStr] += amount;
+                    }
+                });
+            }
+        }
+
+        function processClientData() {
+            processedData.clientCategories = {};
+
+            // Parse client mappings from CLIENTS tab
+            // Columns C and D: Category code and Client name
+            allData.clients.forEach((row, idx) => {
+                if (idx < 2) return; // Skip headers
+                const categoryCode = row[2];
+                const clientName = row[3];
+                if (categoryCode && clientName) {
+                    processedData.clientCategories[clientName] = categoryCode;
+                }
+            });
+        }
+
+        function processCashFlowData() {
+            processedData.monthlyCashFlow = {};
+
+            allData.statements.forEach((row, idx) => {
+                if (idx === 0) return; // Skip header
+
+                const month = parseNumber(row[0]);
+                const year = parseNumber(row[1]);
+                const debit = parseNumber(row[7]);
+                const credit = parseNumber(row[8]);
+                const balance = parseNumber(row[9]);
+
+                if (!month || !year) return;
+
+                const monthKey = getMonthKey(month, year);
+
+                if (!processedData.monthlyCashFlow[monthKey]) {
+                    processedData.monthlyCashFlow[monthKey] = {
+                        month,
+                        year,
+                        inflows: 0,
+                        outflows: 0,
+                        balance: balance
+                    };
+                }
+
+                if (credit) processedData.monthlyCashFlow[monthKey].inflows += credit;
+                if (debit) processedData.monthlyCashFlow[monthKey].outflows += debit;
+                processedData.monthlyCashFlow[monthKey].balance = balance;
+            });
+        }
+
+        function processAllData() {
+            processIncomeData();
+            processExpenseData();
+            processPCData();
+            processClientData();
+            processCashFlowData();
+        }
+
+        // ============================================================================
+        // UI RENDERING
+        // ============================================================================
+
+        function getAvailableMonths() {
+            const months = new Set();
+            Object.keys(processedData.monthlyRevenue).forEach(key => months.add(key));
+            return Array.from(months).sort().reverse();
+        }
+
+        function getSelectedMonth() {
+            if (!selectedMonth) {
+                const available = getAvailableMonths();
+                selectedMonth = available[0];
+            }
+            return selectedMonth;
+        }
+
+        function renderFilterBar() {
+            const filterBar = document.getElementById('filter-bar');
+            const months = getAvailableMonths();
+            const selectedMth = getSelectedMonth();
+
+            let html = '';
+            if (currentTab === 'monthly-overview') {
+                const availableYears = [...new Set(months.map(m => m.split('-')[0]))].sort().reverse();
+                const selectedYr = selectedMth ? selectedMth.split('-')[0] : availableYears[0];
+                const monthsForYear = months.filter(m => m.startsWith(selectedYr));
+                const selectedMthNum = selectedMth && selectedMth.startsWith(selectedYr)
+                    ? selectedMth.split('-')[1]
+                    : (monthsForYear[0] ? monthsForYear[0].split('-')[1] : '01');
+                const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                html = `
+                    <label>Year:</label>
+                    <select id="overview-year-selector" onchange="handleOverviewYearChange()">
+                        ${availableYears.map(y => `<option value="${y}" ${y === selectedYr ? 'selected' : ''}>${y}</option>`).join('')}
+                    </select>
+                    <label>Month:</label>
+                    <select id="overview-month-selector" onchange="handleOverviewMonthChange()">
+                        ${monthsForYear.map(m => {
+                            const mNum = m.split('-')[1];
+                            const mIdx = parseInt(mNum) - 1;
+                            return `<option value="${mNum}" ${mNum === selectedMthNum ? 'selected' : ''}>${monthNames[mIdx]}</option>`;
+                        }).join('')}
+                    </select>
+                    <label style="margin-left:16px; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                        <input type="checkbox" id="after-tax-toggle" ${showAfterTax ? 'checked' : ''} onchange="handleAfterTaxToggle()">
+                        Incl. Tax (gross)
+                    </label>
+                `;
+            } else if (currentTab === 'profit-loss') {
+                html = `
+                    <label>Year:</label>
+                    <select id="year-selector" onchange="handleYearChange()">
+                        ${getAvailableYears().map(y => `<option value="${y}">${y}</option>`).join('')}
+                    </select>
+                    <div class="toggle-switch">
+                        <label>YoY Comparison:</label>
+                        <input type="checkbox" id="yoy-toggle" ${showYoY ? 'checked' : ''} onchange="handleYoYToggle()">
+                    </div>
+                `;
+            } else if (currentTab === 'expenses') {
+                const expMonths = getExpenseMonthsForDropdown();
+                const expAvailableYears = [...new Set(expMonths.map(m => m.split('-')[0]))].sort().reverse();
+                const expSelectedKey = document.getElementById('expense-month-selector')?.value || expMonths[0] || '';
+                const expSelectedYr = expSelectedKey ? expSelectedKey.split('-')[0] : expAvailableYears[0];
+                const expMonthsForYear = expMonths.filter(m => m.startsWith(expSelectedYr));
+                const expSelectedMth = expSelectedKey && expSelectedKey.startsWith(expSelectedYr)
+                    ? expSelectedKey.split('-')[1]
+                    : (expMonthsForYear[0] ? expMonthsForYear[0].split('-')[1] : '01');
+                const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                html = `
+                    <label>Year:</label>
+                    <select id="expense-year-selector" onchange="handleExpenseYearChange()">
+                        ${expAvailableYears.map(y => `<option value="${y}" ${y === expSelectedYr ? 'selected' : ''}>${y}</option>`).join('')}
+                    </select>
+                    <label>Month:</label>
+                    <select id="expense-month-selector" onchange="handleExpenseMonthChange()">
+                        ${expMonthsForYear.map(m => {
+                            const mNum = m.split('-')[1];
+                            return `<option value="${m}" ${mNum === expSelectedMth ? 'selected' : ''}>${monthNames[parseInt(mNum) - 1]}</option>`;
+                        }).join('')}
+                    </select>
+                `;
+            } else if (currentTab === 'key-accounts') {
+                html = `
+                    <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                        <input type="checkbox" id="srlv-toggle" ${showSRLV ? 'checked' : ''} onchange="handleSRLVToggle()">
+                        Include Siam Rivea LV in charts
+                    </label>
+                `;
+            }
+
+            filterBar.innerHTML = html;
+        }
+
+        // Returns months sorted newest-first, excluding current and future months
+        function getCompleteMonths() {
+            const now = getCurrentDate();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            return getAvailableMonths().filter(k => {
+                const [y, m] = k.split('-').map(Number);
+                if (y > currentYear) return false;
+                if (y === currentYear && m >= currentMonth) return false;
+                return true;
+            });
+        }
+
+        function getAvailableYears() {
+            const currentYear = getCurrentDate().getFullYear();
+            const years = new Set();
+            Object.keys(processedData.monthlyExpensesByMain).forEach(key => {
+                const y = parseInt(key.split('-')[0]);
+                if (y <= currentYear) years.add(y.toString());
+            });
+            return Array.from(years).sort().reverse();
+        }
+
+        function handleMonthChange() {
+            selectedMonth = document.getElementById('month-selector')?.value || selectedMonth;
+            renderMonthlyOverview();
+        }
+
+        function handleOverviewYearChange() {
+            const yr = document.getElementById('overview-year-selector').value;
+            const monthsForYear = getAvailableMonths().filter(m => m.startsWith(yr));
+            selectedMonth = monthsForYear[0] || selectedMonth;
+            renderFilterBar();
+            renderMonthlyOverview();
+        }
+
+        function handleOverviewMonthChange() {
+            const yr = document.getElementById('overview-year-selector').value;
+            const mth = document.getElementById('overview-month-selector').value;
+            selectedMonth = `${yr}-${mth}`;
+            renderMonthlyOverview();
+        }
+
+        function handleAfterTaxToggle() {
+            showAfterTax = document.getElementById('after-tax-toggle').checked;
+            document.getElementById('monthly-net-note').textContent = showAfterTax
+                ? 'All figures are gross amounts including tax'
+                : 'All figures are net amounts before tax';
+            renderMonthlyOverview();
+        }
+
+        function handleSRLVToggle() {
+            showSRLV = document.getElementById('srlv-toggle').checked;
+            renderKeyAccounts();
+        }
+
+        function handleExpenseYearChange() {
+            renderFilterBar();
+            renderExpenses();
+        }
+
+        function handleExpenseMonthChange() {
+            renderExpenses();
+        }
+
+        function handleYearChange() {
+            renderProfitLoss();
+        }
+
+        function handleYoYToggle() {
+            showYoY = document.getElementById('yoy-toggle').checked;
+            renderProfitLoss();
+        }
+
+        function handleTabSwitch(tabName) {
+            currentTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+
+            // Render filter bar
+            renderFilterBar();
+
+            // Render content
+            switch (tabName) {
+                case 'monthly-overview':
+                    renderMonthlyOverview();
+                    break;
+                case 'profit-loss':
+                    renderProfitLoss();
+                    break;
+                case 'expenses':
+                    renderExpenses();
+                    break;
+                case 'key-accounts':
+                    renderKeyAccounts();
+                    break;
+            }
+        }
+
+        // ============================================================================
+        // TAB 1: MONTHLY OVERVIEW
+        // ============================================================================
+
+        function renderMonthlyOverview() {
+            const monthKey = getSelectedMonth();
+            const data = processedData.monthlyRevenue[monthKey];
+
+            if (!data) {
+                document.getElementById('monthly-kpi-grid').innerHTML = '<p>No data available for this month</p>';
+                return;
+            }
+
+            // KPI Cards
+            const now = getCurrentDate();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            const [dataYear, dataMonth] = monthKey.split('-').map(Number);
+
+            const daysInMonth = getLastDayOfMonth(dataMonth, dataYear);
+            const isCurrentMonth = dataYear === currentYear && dataMonth === currentMonth;
+            let daysElapsed;
+            if (isCurrentMonth && data.lastRecordDate) {
+                const lastRecord = parseDate(data.lastRecordDate);
+                daysElapsed = lastRecord ? lastRecord.getDate() : now.getDate();
+            } else {
+                daysElapsed = daysInMonth;
+            }
+
+            const totalRevenue = showAfterTax ? (data.totalWithTax || data.total) : data.total;
+            const dailyAverage = totalRevenue / daysElapsed;
+            const projectedRevenue = dailyAverage * daysInMonth;
+
+            let yoyChange = 0;
+            const previousYearKey = getMonthKey(dataMonth, dataYear - 1);
+            if (processedData.monthlyRevenue[previousYearKey]) {
+                const prevData = processedData.monthlyRevenue[previousYearKey];
+                const previousYearTotal = showAfterTax ? (prevData.totalWithTax || prevData.total) : prevData.total;
+                yoyChange = previousYearTotal > 0 ? ((totalRevenue - previousYearTotal) / previousYearTotal) * 100 : 0;
+            }
+
+            const lastRecordDate = data.lastRecordDate || 'Unknown';
+            const taxLabel = showAfterTax ? ' (incl. tax)' : '';
+
+            const kpiHtml = `
+                <div class="kpi-card">
+                    <h3>Revenue to Date${taxLabel}</h3>
+                    <div class="value">${formatCurrency(totalRevenue)}</div>
+                    <div class="subtitle">Last record on ${lastRecordDate}</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Daily Average${taxLabel}</h3>
+                    <div class="value">${formatCurrency(dailyAverage)}</div>
+                    <div class="subtitle">${daysElapsed} days elapsed</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Projected Revenue${taxLabel}</h3>
+                    <div class="value">${formatCurrency(projectedRevenue)}</div>
+                    <div class="subtitle">${daysInMonth} days in month</div>
+                </div>
+                <div class="kpi-card ${yoyChange >= 0 ? 'positive' : 'negative'}">
+                    <h3>YoY Change</h3>
+                    <div class="value">${yoyChange >= 0 ? '+' : ''}${yoyChange.toFixed(1)}%</div>
+                    <div class="subtitle">vs same month last year</div>
+                </div>
+            `;
+            document.getElementById('monthly-kpi-grid').innerHTML = kpiHtml;
+
+            // Top 10 Accounts Table (always include LP BUMRUNGRAD DIRECT)
+            const accounts = Object.entries(data.accounts).map(([name, amount]) => ({ name, amount }));
+            accounts.sort((a, b) => b.amount - a.amount);
+
+            // Always include LP BUMRUNGRAD DIRECT if not in top 10
+            const specialAccount = accounts.find(a => a.name === 'LP BUMRUNGRAD DIRECT');
+            if (!specialAccount && data.accounts['LP BUMRUNGRAD DIRECT']) {
+                accounts.push({ name: 'LP BUMRUNGRAD DIRECT', amount: data.accounts['LP BUMRUNGRAD DIRECT'] });
+            }
+
+            const top10 = accounts.slice(0, 10);
+
+            let tableHtml = '<thead><tr><th>Account</th><th class="number">Total</th><th class="percentage">Share %</th></tr></thead><tbody>';
+
+            // Total row first
+            tableHtml += `
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td class="number">${formatCurrency(data.total)}</td>
+                    <td class="percentage">100%</td>
+                </tr>
+            `;
+
+            top10.forEach(acc => {
+                const share = (acc.amount / data.total * 100).toFixed(1);
+                tableHtml += `
+                    <tr>
+                        <td>${acc.name}</td>
+                        <td class="number">${formatCurrency(acc.amount)}</td>
+                        <td class="percentage">${share}%</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += '</tbody>';
+            document.getElementById('monthly-accounts-table').innerHTML = tableHtml;
+
+            // Channel stacked bar chart — last 6 months
+            const last6Keys = getAvailableMonths().slice(0, 6).reverse();
+            const channelNames = ['PO SALES', 'BRANCH SALES', 'DIRECT SALES'];
+            const channelDatasets = channelNames.map((ch, i) => ({
+                label: ch,
+                data: last6Keys.map(k => processedData.monthlyRevenue[k]?.byChannel[ch] || 0),
+                backgroundColor: CHART_COLORS[i],
+                borderWidth: 0
+            }));
+            const channelLabels = last6Keys.map(k => {
+                const [y, m] = k.split('-');
+                return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+
+            if (window._channelChart) window._channelChart.destroy();
+            const ctxCh = document.getElementById('channel-chart').getContext('2d');
+            window._channelChart = new Chart(ctxCh, {
+                type: 'bar',
+                data: { labels: channelLabels, datasets: channelDatasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { bottom: 4 } },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11, family: "'Inter', sans-serif" }, padding: 8, boxWidth: 10 } },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+                        y: { stacked: true, ticks: { font: { size: 11 }, callback: v => '฿' + Math.round(v / 1000) + 'k' } }
+                    }
+                }
+            });
+        }
+
+        // ============================================================================
+        // TAB 2: PROFIT & LOSS
+        // ============================================================================
+
+        function renderProfitLoss() {
+            const years = getAvailableYears();
+            const selectedYear = document.getElementById('year-selector')?.value || years[0];
+
+            // Get months for the selected year
+            const months = [];
+            Object.keys(processedData.monthlyExpensesByMain).forEach(key => {
+                const [y, m] = key.split('-').map(Number);
+                if (y === parseInt(selectedYear)) {
+                    months.push(parseInt(m));
+                }
+            });
+            months.sort((a, b) => a - b);
+
+            // Filter out incomplete current month
+            const now = getCurrentDate();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            // Exclude current and future months (only complete months shown)
+            const displayMonths = months.filter(m => {
+                const yr = parseInt(selectedYear);
+                if (yr > currentYear) return false;
+                if (yr === currentYear && m >= currentMonth) return false;
+                return true;
+            });
+
+            // Build P&L table
+            let plData = {};
+
+            // Initialize with zeros for all categories
+            const initializeCategory = (code, label) => {
+                if (!plData[code]) {
+                    plData[code] = { label, data: {}, children: [] };
+                    displayMonths.forEach(m => {
+                        plData[code].data[m] = 0;
+                    });
+                }
+            };
+
+            // Revenue
+            displayMonths.forEach(m => {
+                const monthKey = getMonthKey(m, parseInt(selectedYear));
+                const revenueData = processedData.monthlyRevenue[monthKey];
+                if (revenueData) {
+                    if (!plData['REVENUE']) {
+                        plData['REVENUE'] = { label: 'REVENUE', data: {}, children: [] };
+                        displayMonths.forEach(dm => plData['REVENUE'].data[dm] = 0);
+                    }
+                    plData['REVENUE'].data[m] = revenueData.total;
+                }
+            });
+
+            // COGS
+            displayMonths.forEach(m => {
+                const monthKey = getMonthKey(m, parseInt(selectedYear));
+                const expData = processedData.monthlyExpensesByMain[monthKey];
+                const pcData = processedData.monthlyPCByMain[monthKey];
+
+                const cogs5010 = (expData && expData['5010'] || 0) + (pcData && pcData['5010'] || 0);
+
+                if (!plData['5010']) {
+                    plData['5010'] = { label: 'Cost of Goods Sold', data: {}, children: [] };
+                    displayMonths.forEach(dm => plData['5010'].data[dm] = 0);
+                }
+                plData['5010'].data[m] = cogs5010;
+            });
+
+            // OPEX Categories
+            const opexCategories = ['6010', '6020', '7010', '7020', '8020', '8110', '8120', '8210', '8310', '8410'];
+            const opexLabels = {
+                '6010': 'Payroll',
+                '6020': 'Benefits',
+                '7010': 'Supplies',
+                '7020': 'Operational Equipment',
+                '8020': 'Marketing',
+                '8110': 'Maintenance',
+                '8120': 'Other Operating',
+                '8210': 'Admin',
+                '8310': 'Utilities',
+                '8410': 'Occupancy'
+            };
+
+            opexCategories.forEach(code => {
+                displayMonths.forEach(m => {
+                    const monthKey = getMonthKey(m, parseInt(selectedYear));
+                    const expData = processedData.monthlyExpensesByMain[monthKey];
+                    const pcData = processedData.monthlyPCByMain[monthKey];
+
+                    const amount = (expData && expData[code] || 0) + (pcData && pcData[code] || 0);
+
+                    if (!plData[code]) {
+                        plData[code] = { label: opexLabels[code], data: {}, children: [] };
+                        displayMonths.forEach(dm => plData[code].data[dm] = 0);
+                    }
+                    plData[code].data[m] = amount;
+                });
+            });
+
+            // Non-OPEX Categories (9010 Tax Payable excluded — belongs on Cash Flow, not P&L)
+            const nonopCategories = ['9020', '9030', '9040'];
+            const nonopLabels = {
+                '9020': 'CAPEX',
+                '9030': 'Financial Activities',
+                '9040': 'Other Assets'
+            };
+
+            nonopCategories.forEach(code => {
+                displayMonths.forEach(m => {
+                    const monthKey = getMonthKey(m, parseInt(selectedYear));
+                    const expData = processedData.monthlyExpensesByMain[monthKey];
+                    const pcData = processedData.monthlyPCByMain[monthKey];
+                    const amount = (expData && expData[code] || 0) + (pcData && pcData[code] || 0);
+                    if (!plData[code]) {
+                        plData[code] = { label: nonopLabels[code], data: {}, children: [] };
+                        displayMonths.forEach(dm => plData[code].data[dm] = 0);
+                    }
+                    plData[code].data[m] = amount;
+                });
+            });
+
+            // Calculate totals
+            const calculateTotal = (monthNum) => {
+                return Object.values(plData).reduce((sum, cat) => sum + (cat.data[monthNum] || 0), 0);
+            };
+
+            // Render KPI cards
+            const revenueTotal = displayMonths.reduce((sum, m) => sum + (plData['REVENUE']?.data[m] || 0), 0);
+            const cogsTotal = displayMonths.reduce((sum, m) => sum + (plData['5010']?.data[m] || 0), 0);
+            const grossProfit = revenueTotal - cogsTotal;
+            const grossMargin = revenueTotal > 0 ? (grossProfit / revenueTotal * 100).toFixed(1) : 0;
+
+            const opexTotal = opexCategories.reduce((sum, code) => {
+                return sum + displayMonths.reduce((m_sum, m) => m_sum + (plData[code]?.data[m] || 0), 0);
+            }, 0);
+            const operatingProfit = grossProfit - opexTotal;
+            const operatingMargin = revenueTotal > 0 ? (operatingProfit / revenueTotal * 100).toFixed(1) : 0;
+
+            // Compute non-opex and net result early (also referenced in table section)
+            const nonopTotal = nonopCategories.reduce((sum, code) => {
+                return sum + displayMonths.reduce((m_sum, m) => m_sum + (plData[code]?.data[m] || 0), 0);
+            }, 0);
+            const netResult = operatingProfit - nonopTotal;
+            const netMargin = revenueTotal > 0 ? (netResult / revenueTotal * 100).toFixed(1) : 0;
+
+            const kpiHtml = `
+                <div class="kpi-card ${parseFloat(grossMargin) > 0 ? 'positive' : parseFloat(grossMargin) < 0 ? 'negative' : ''}">
+                    <h3>Gross Margin %</h3>
+                    <div class="value">${grossMargin}%</div>
+                </div>
+                <div class="kpi-card ${parseFloat(operatingMargin) > 0 ? 'positive' : parseFloat(operatingMargin) < 0 ? 'negative' : ''}">
+                    <h3>Operating Margin %</h3>
+                    <div class="value">${operatingMargin}%</div>
+                </div>
+                <div class="kpi-card ${parseFloat(netMargin) >= 0 ? 'positive' : 'negative'}">
+                    <h3>Net Margin %</h3>
+                    <div class="value">${netMargin}%</div>
+                </div>
+            `;
+            document.getElementById('pl-kpi-grid').innerHTML = kpiHtml;
+
+            // Helper: build subcategory rows for a parent code
+            const buildSubRows = (parentCode, groupId) => {
+                const acctEntry = [...CHART_OF_ACCOUNTS.opex, ...CHART_OF_ACCOUNTS.nonop]
+                    .find(e => e.code === parentCode);
+                if (!acctEntry || !acctEntry.children) return '';
+                let rows = acctEntry.children.map(child => {
+                    const byMonth = displayMonths.map(m => {
+                        const monthKey = getMonthKey(m, parseInt(selectedYear));
+                        return (processedData.monthlyExpenses[monthKey]?.[child.code] || 0);
+                    });
+                    const childTotal = byMonth.reduce((s, v) => s + v, 0);
+                    // Prior year for sub-codes
+                    const priorChildTotal = displayMonths.reduce((s, m) => s + (processedData.monthlyExpenses[getMonthKey(m, priorYear)]?.[child.code] || 0), 0);
+                    if (childTotal === 0 && priorChildTotal === 0) return '';
+                    return `<tr class="subcategory-row" data-group="${groupId}">
+                        <td>${child.label}</td>
+                        <td class="number">${formatCurrency(childTotal)}</td>
+                        ${yoyCols(childTotal, priorChildTotal)}
+                        ${byMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                    </tr>`;
+                }).join('');
+
+                // Add Petty Cash sub-row if PC data exists for this parent code
+                const pcByMonth = displayMonths.map(m => {
+                    const monthKey = getMonthKey(m, parseInt(selectedYear));
+                    return processedData.monthlyPCByMain[monthKey]?.[parentCode] || 0;
+                });
+                const pcTotal = pcByMonth.reduce((s, v) => s + v, 0);
+                const priorPcTotal = displayMonths.reduce((s, m) => s + (processedData.monthlyPCByMain[getMonthKey(m, priorYear)]?.[parentCode] || 0), 0);
+                if (pcTotal > 0 || priorPcTotal > 0) {
+                    rows += `<tr class="subcategory-row" data-group="${groupId}" style="font-style:italic;">
+                        <td>Petty Cash</td>
+                        <td class="number">${formatCurrency(pcTotal)}</td>
+                        ${yoyCols(pcTotal, priorPcTotal)}
+                        ${pcByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                    </tr>`;
+                }
+                return rows;
+            };
+
+            // Helper: currency cell with red/green coloring for profit rows
+            const colorCell = (v) => `<td class="number${v < 0 ? ' negative' : v > 0 ? ' positive' : ''}">${formatCurrency(v)}</td>`;
+
+            // YoY helpers
+            const priorYear = parseInt(selectedYear) - 1;
+            const getPriorTotal = (code) => displayMonths.reduce((sum, m) => {
+                const mk = getMonthKey(m, priorYear);
+                if (code === 'REVENUE') return sum + (processedData.monthlyRevenue[mk]?.total || 0);
+                return sum + (processedData.monthlyExpensesByMain[mk]?.[code] || 0) + (processedData.monthlyPCByMain[mk]?.[code] || 0);
+            }, 0);
+            const yoyPct = (cur, prev) => prev > 0 ? `${((cur - prev) / prev * 100).toFixed(1)}%` : '—';
+            const yoyCols = (cur, prev) => !showYoY ? '' : `<td class="number">${formatCurrency(prev)}</td><td class="number${cur < prev ? ' negative' : cur > prev ? ' positive' : ''}">${yoyPct(cur, prev)}</td>`;
+            const yoyColorCols = (cur, prev) => !showYoY ? '' : `${colorCell(prev)}<td class="number${cur < prev ? ' negative' : cur > prev ? ' positive' : ''}">${yoyPct(cur, prev)}</td>`;
+
+            // Render table
+            let tableHtml = '<thead><tr><th style="position:sticky;left:0;background:var(--cyan-dark1);z-index:2;">Category</th><th class="number">Total</th>';
+            if (showYoY) tableHtml += `<th class="number">${priorYear} Total</th><th class="number">YoY %</th>`;
+            displayMonths.forEach(m => {
+                const date = new Date(parseInt(selectedYear), m - 1);
+                const label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                tableHtml += `<th class="number">${label}</th>`;
+            });
+            tableHtml += '</tr></thead><tbody>';
+
+            // Revenue
+            const revenueByMonth = displayMonths.map(m => plData['REVENUE']?.data[m] || 0);
+            const priorRevenue = getPriorTotal('REVENUE');
+            tableHtml += `
+                <tr class="total-row">
+                    <td style="position:sticky;left:0;background:var(--cyan-dark2);">REVENUE</td>
+                    <td class="number">${formatCurrency(revenueTotal)}</td>
+                    ${yoyCols(revenueTotal, priorRevenue)}
+                    ${revenueByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                </tr>
+            `;
+
+            // COGS with toggle
+            const cogsByMonth = displayMonths.map(m => plData['5010']?.data[m] || 0);
+            const priorCogs = getPriorTotal('5010');
+            tableHtml += `
+                <tr class="category-row" onclick="toggleSubrows('cogs')">
+                    <td style="position:sticky;left:0;background:inherit;">▶ Cost of Goods Sold</td>
+                    <td class="number">${formatCurrency(cogsTotal)}</td>
+                    ${yoyCols(cogsTotal, priorCogs)}
+                    ${cogsByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                </tr>
+                ${buildSubRows('5010', 'cogs')}
+            `;
+
+            // Gross Profit
+            const grossProfitByMonth = displayMonths.map(m => (plData['REVENUE']?.data[m] || 0) - (plData['5010']?.data[m] || 0));
+            const priorGrossProfit = priorRevenue - priorCogs;
+            tableHtml += `
+                <tr class="profit-row">
+                    <td style="position:sticky;left:0;background:var(--cyan-light3);">GROSS PROFIT</td>
+                    ${colorCell(grossProfit)}
+                    ${yoyColorCols(grossProfit, priorGrossProfit)}
+                    ${grossProfitByMonth.map(v => colorCell(v)).join('')}
+                </tr>
+            `;
+
+            // Section header: OPERATING EXPENSES
+            const totalCols = displayMonths.length + 2 + (showYoY ? 2 : 0);
+            tableHtml += `
+                <tr class="section-header-row">
+                    <td colspan="${totalCols}">Operating Expenses</td>
+                </tr>
+            `;
+
+            // OPEX with toggles
+            const operatingProfitByMonth = displayMonths.map(m => {
+                const gp = (plData['REVENUE']?.data[m] || 0) - (plData['5010']?.data[m] || 0);
+                return gp - opexCategories.reduce((sum, code) => sum + (plData[code]?.data[m] || 0), 0);
+            });
+
+            opexCategories.forEach(code => {
+                const label = opexLabels[code];
+                const total = displayMonths.reduce((sum, m) => sum + (plData[code]?.data[m] || 0), 0);
+                const priorVal = getPriorTotal(code);
+                if (total === 0 && priorVal === 0) return; // hide empty rows
+                const byMonth = displayMonths.map(m => plData[code]?.data[m] || 0);
+                const gid = 'opex_' + code;
+                tableHtml += `
+                    <tr class="category-row" onclick="toggleSubrows('${gid}')">
+                        <td style="position:sticky;left:0;background:inherit;">▶ ${label}</td>
+                        <td class="number">${formatCurrency(total)}</td>
+                        ${yoyCols(total, priorVal)}
+                        ${byMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                    </tr>
+                    ${buildSubRows(code, gid)}
+                `;
+            });
+
+            // Total Operating Expenses row
+            const opexTotalByMonth = displayMonths.map(m =>
+                opexCategories.reduce((sum, code) => sum + (plData[code]?.data[m] || 0), 0)
+            );
+            const priorOpex = opexCategories.reduce((sum, code) => sum + getPriorTotal(code), 0);
+            tableHtml += `
+                <tr class="total-row">
+                    <td style="position:sticky;left:0;background:var(--cyan-dark2);">TOTAL OPERATING EXPENSES</td>
+                    <td class="number">${formatCurrency(opexTotal)}</td>
+                    ${yoyCols(opexTotal, priorOpex)}
+                    ${opexTotalByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                </tr>
+            `;
+
+            // Operating Profit
+            const priorOperatingProfit = priorGrossProfit - priorOpex;
+            tableHtml += `
+                <tr class="profit-row">
+                    <td style="position:sticky;left:0;background:var(--cyan-light3);">OPERATING PROFIT</td>
+                    ${colorCell(operatingProfit)}
+                    ${yoyColorCols(operatingProfit, priorOperatingProfit)}
+                    ${operatingProfitByMonth.map(v => colorCell(v)).join('')}
+                </tr>
+            `;
+
+            // Section header: NON-OPERATING ITEMS
+            tableHtml += `
+                <tr class="section-header-row">
+                    <td colspan="${totalCols}">Non-Operating Items (Below the Line)</td>
+                </tr>
+            `;
+
+            // Non-OPEX with toggles
+            nonopCategories.forEach(code => {
+                const label = nonopLabels[code];
+                const total = displayMonths.reduce((sum, m) => sum + (plData[code]?.data[m] || 0), 0);
+                const priorVal = getPriorTotal(code);
+                if (total === 0 && priorVal === 0) return; // hide empty rows
+                const byMonth = displayMonths.map(m => plData[code]?.data[m] || 0);
+                const gid = 'nonop_' + code;
+                tableHtml += `
+                    <tr class="category-row" onclick="toggleSubrows('${gid}')">
+                        <td style="position:sticky;left:0;background:inherit;">▶ ${label}</td>
+                        <td class="number">${formatCurrency(total)}</td>
+                        ${yoyCols(total, priorVal)}
+                        ${byMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                    </tr>
+                    ${buildSubRows(code, gid)}
+                `;
+            });
+
+            // Total Non-Operating Expenses row
+            const nonopTotalByMonth = displayMonths.map(m =>
+                nonopCategories.reduce((sum, code) => sum + (plData[code]?.data[m] || 0), 0)
+            );
+            const priorNonop = nonopCategories.reduce((sum, code) => sum + getPriorTotal(code), 0);
+            tableHtml += `
+                <tr class="total-row">
+                    <td style="position:sticky;left:0;background:var(--cyan-dark2);">TOTAL NON-OPERATING EXPENSES</td>
+                    <td class="number">${formatCurrency(nonopTotal)}</td>
+                    ${yoyCols(nonopTotal, priorNonop)}
+                    ${nonopTotalByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}
+                </tr>
+            `;
+
+            // Net Result (nonopTotal and netResult already computed before KPI section)
+            const netResultByMonth = displayMonths.map((m, i) => operatingProfitByMonth[i] - nonopTotalByMonth[i]);
+            const priorNetResult = priorOperatingProfit - priorNonop;
+
+            tableHtml += `
+                <tr class="profit-row" style="font-size:14px;font-weight:700;">
+                    <td style="position:sticky;left:0;background:var(--cyan-light3);">NET RESULT</td>
+                    ${colorCell(netResult)}
+                    ${yoyColorCols(netResult, priorNetResult)}
+                    ${netResultByMonth.map(v => colorCell(v)).join('')}
+                </tr>
+            `;
+
+            tableHtml += '</tbody>';
+            document.getElementById('pl-table').innerHTML = tableHtml;
+        }
+
+        function toggleSubrows(groupId) {
+            const rows = document.querySelectorAll(`tr[data-group="${groupId}"]`);
+            const parentRow = document.querySelector(`[onclick="toggleSubrows('${groupId}')"]`);
+            const firstCell = parentRow?.querySelector('td:first-child');
+            const isVisible = rows.length > 0 && rows[0].classList.contains('visible');
+            rows.forEach(r => r.classList.toggle('visible', !isVisible));
+            if (firstCell) {
+                firstCell.textContent = firstCell.textContent.replace(/^[▶▼]\s/, (isVisible ? '▶ ' : '▼ '));
+            }
+        }
+
+        // ============================================================================
+        // TAB 3: EXPENSE ANALYSIS
+        // ============================================================================
+
+        let expenseChartA = null, expenseChartB = null;
+
+        function getExpenseMonthsForDropdown() {
+            return getCompleteMonths();
+        }
+
+        function renderExpenses() {
+            const container = document.getElementById('expenses-content');
+
+            // Month selector uses expense-specific months (no current month)
+            const expMonths = getExpenseMonthsForDropdown();
+            const monthKey = document.getElementById('expense-month-selector')?.value || expMonths[0];
+            if (!monthKey) { container.innerHTML = '<p>No complete months available.</p>'; return; }
+
+            const expByMain = processedData.monthlyExpensesByMain[monthKey] || {};
+            const pcByMain = processedData.monthlyPCByMain[monthKey] || {};
+            const totalIncome = processedData.monthlyRevenue[monthKey]?.total || 0;
+
+            const codeToLabel = {
+                '5010': 'COGS', '6010': 'Payroll', '6020': 'Benefits',
+                '7010': 'Supplies', '7020': 'Equipment', '8020': 'Marketing',
+                '8110': 'Maintenance', '8120': 'Other Operating', '8210': 'Admin',
+                '8310': 'Utilities', '8410': 'Occupancy',
+                '9010': 'Tax Payable', '9020': 'CAPEX', '9030': 'Financial Activities', '9040': 'Other Assets'
+            };
+
+            const combined = {};
+            Object.entries(expByMain).forEach(([code, amt]) => { if (code === '9010') return; combined[code] = (combined[code] || 0) + amt; });
+            Object.entries(pcByMain).forEach(([code, amt]) => { if (code === '9010') return; combined[code] = (combined[code] || 0) + amt; });
+
+            const sorted = Object.entries(combined).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+            const totalExp = sorted.reduce((s, [, v]) => s + v, 0);
+            const labels = sorted.map(([code]) => codeToLabel[code] || code);
+            const amounts = sorted.map(([, v]) => v);
+
+            const datalabelsPlugin = {
+                formatter: (value, ctx) => {
+                    const pct = (value / totalExp * 100).toFixed(1);
+                    return pct < 4 ? '' : `${pct}%`;
+                },
+                color: '#fff',
+                font: { size: 11, weight: '600', family: "'Inter', sans-serif" }
+            };
+
+            container.innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+                    <div class="chart-container" style="height:420px;margin-bottom:0;overflow:hidden;">
+                        <h3>% of Total Expenses <span style="font-weight:400;font-size:13px;color:var(--cyan-base);">— Total: ฿${Math.round(totalExp).toLocaleString('en-US')}</span></h3>
+                        <canvas id="exp-chart-a"></canvas>
+                    </div>
+                    <div class="chart-container" style="height:420px;margin-bottom:0;overflow:hidden;">
+                        <h3>% of Total Income <span style="font-weight:400;font-size:13px;color:var(--cyan-base);">— Income: ฿${totalIncome > 0 ? Math.round(totalIncome).toLocaleString('en-US') : 'N/A'}</span></h3>
+                        <canvas id="exp-chart-b"></canvas>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="exp-summary-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th class="number">Amount (฿)</th>
+                                <th class="number">% of Expenses</th>
+                                <th class="number">% of Income</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sorted.map(([code, amt], i) => `
+                                <tr>
+                                    <td>${codeToLabel[code] || code}</td>
+                                    <td class="number">${formatNumber(amt)}</td>
+                                    <td class="number">${(amt / totalExp * 100).toFixed(1)}%</td>
+                                    <td class="number">${totalIncome > 0 ? (amt / totalIncome * 100).toFixed(1) + '%' : '—'}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                                <td>TOTAL</td>
+                                <td class="number">${formatNumber(totalExp)}</td>
+                                <td class="number">100%</td>
+                                <td class="number">${totalIncome > 0 ? (totalExp / totalIncome * 100).toFixed(1) + '%' : '—'}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            if (expenseChartA) expenseChartA.destroy();
+            if (expenseChartB) expenseChartB.destroy();
+
+            const commonOpts = (divisor) => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: 8 },
+                plugins: {
+                    legend: { position: 'bottom', labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 } },
+                    datalabels: {
+                        formatter: (value) => {
+                            const pct = (value / divisor * 100).toFixed(1);
+                            if (parseFloat(pct) < 5) return '';
+                            return `${pct}%\n฿${Math.round(value / 1000)}k`;
+                        },
+                        color: '#fff',
+                        font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+                        textAlign: 'center'
+                    }
+                }
+            });
+
+            const commonData = {
+                labels,
+                datasets: [{ data: amounts, backgroundColor: CHART_COLORS.slice(0, amounts.length), borderColor: '#fff', borderWidth: 2 }]
+            };
+
+            expenseChartA = new Chart(document.getElementById('exp-chart-a').getContext('2d'), {
+                type: 'doughnut',
+                data: JSON.parse(JSON.stringify(commonData)),
+                options: commonOpts(totalExp),
+                plugins: [ChartDataLabels]
+            });
+
+            expenseChartB = new Chart(document.getElementById('exp-chart-b').getContext('2d'), {
+                type: 'doughnut',
+                data: JSON.parse(JSON.stringify(commonData)),
+                options: commonOpts(totalIncome > 0 ? totalIncome : totalExp),
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        // ============================================================================
+        // TAB 5: KEY ACCOUNTS
+        // ============================================================================
+
+        let accountsPieChart = null;
+        let clientCategoriesChart = null;
+        let siamRiveaChart = null;
+
+        function renderKeyAccounts() {
+            // Always include LP BUMRUNGRAD DIRECT
+            let topAccounts = [...processedData.topAccounts];
+            const specialIdx = topAccounts.findIndex(a => a.name === 'LP BUMRUNGRAD DIRECT');
+            if (specialIdx === -1 && processedData.topAccounts.length > 0) {
+                const allAccounts = Object.entries(processedData.monthlyRevenue)
+                    .flatMap(([, data]) => Object.entries(data.accounts))
+                    .reduce((acc, [name, amount]) => { acc[name] = (acc[name] || 0) + amount; return acc; }, {});
+                if (allAccounts['LP BUMRUNGRAD DIRECT']) {
+                    topAccounts.push({ name: 'LP BUMRUNGRAD DIRECT', amount: allAccounts['LP BUMRUNGRAD DIRECT'] });
+                }
+            }
+
+            // Apply SRLV filter to pie charts only
+            const chartAccounts = showSRLV
+                ? topAccounts.slice(0, 10)
+                : topAccounts.filter(a => a.name !== 'SIAM RIVEA LOUIS VUITTON').slice(0, 10);
+            const top10Accounts = topAccounts.slice(0, 10); // table always shows full list
+            const grandTotal = chartAccounts.reduce((s, a) => s + a.amount, 0);
+
+            const datalabelOpts = (total) => ({
+                formatter: (value) => {
+                    const pct = (value / total * 100).toFixed(1);
+                    if (parseFloat(pct) < 5) return '';
+                    return `${pct}%\n฿${Math.round(value / 1000)}k`;
+                },
+                color: '#fff',
+                font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+                textAlign: 'center'
+            });
+
+            const pieLegendOpts = {
+                position: 'bottom',
+                labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 }
+            };
+
+            // Top accounts pie chart
+            if (accountsPieChart) accountsPieChart.destroy();
+            const ctx1 = document.getElementById('accounts-pie-chart').getContext('2d');
+            accountsPieChart = new Chart(ctx1, {
+                type: 'pie',
+                data: {
+                    labels: chartAccounts.map(a => a.name),
+                    datasets: [{ data: chartAccounts.map(a => a.amount), backgroundColor: CHART_COLORS, borderColor: '#fff', borderWidth: 2 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: 8 },
+                    plugins: { legend: pieLegendOpts, datalabels: datalabelOpts(grandTotal) }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            // Client categories doughnut (SRLV filter applies here too)
+            const categoryMap = { 'B1': 'Restaurant', 'B2': 'Retailer', 'B3': 'Corporate', 'P4': 'Private', 'N5': 'Casual', 'L6': 'Internal' };
+            const categoryTotals = {};
+            Object.values(processedData.monthlyRevenue).forEach(monthData => {
+                Object.entries(monthData.accounts).forEach(([accName, amount]) => {
+                    if (!showSRLV && accName === 'SIAM RIVEA LOUIS VUITTON') return;
+                    const catLabel = categoryMap[processedData.clientCategories[accName]] || 'Other';
+                    categoryTotals[catLabel] = (categoryTotals[catLabel] || 0) + amount;
+                });
+            });
+            const catLabels = Object.keys(categoryTotals);
+            const catData = Object.values(categoryTotals);
+            const catTotal = catData.reduce((s, v) => s + v, 0);
+
+            if (clientCategoriesChart) clientCategoriesChart.destroy();
+            const ctx2 = document.getElementById('client-categories-chart').getContext('2d');
+            clientCategoriesChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: CHART_COLORS, borderColor: '#fff', borderWidth: 2 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: 8 },
+                    plugins: { legend: pieLegendOpts, datalabels: datalabelOpts(catTotal) }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            // Siam Rivea LV bar chart — last 6 complete months
+            const last6Keys = getCompleteMonths().slice(0, 6).reverse();
+            const siamData = last6Keys.map(k => processedData.monthlyRevenue[k]?.accounts['SIAM RIVEA LOUIS VUITTON'] || 0);
+            const siamLabels = last6Keys.map(k => {
+                const [y, m] = k.split('-');
+                return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+
+            if (siamRiveaChart) siamRiveaChart.destroy();
+            const ctx3 = document.getElementById('siam-rivea-chart').getContext('2d');
+            siamRiveaChart = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: siamLabels,
+                    datasets: [{ label: 'Revenue (฿)', data: siamData, backgroundColor: '#d4a843', borderWidth: 0 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end', align: 'top',
+                            formatter: v => v > 0 ? '฿' + Math.round(v / 1000) + 'k' : '',
+                            color: '#0C343D', font: { size: 11, weight: '600', family: "'Inter', sans-serif" }
+                        }
+                    },
+                    scales: { y: { ticks: { callback: v => '฿' + Math.round(v / 1000) + 'k' } }, x: { grid: { display: false } } }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            // Table: Top accounts monthly breakdown (C9 — TOTAL row first)
+            const months = last6Keys.map(k => { const [y, m] = k.split('-'); return { y: parseInt(y), m: parseInt(m) }; });
+            const monthTotals = months.map(({ y, m }) => {
+                const mk = getMonthKey(m, y);
+                return top10Accounts.reduce((s, acc) => s + (processedData.monthlyRevenue[mk]?.accounts[acc.name] || 0), 0);
+            });
+
+            let tableHtml = '<thead><tr><th>Account</th><th class="number">All-time Total</th>';
+            months.forEach(({ y, m }) => {
+                tableHtml += `<th class="number">${new Date(y, m - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}</th>`;
+            });
+            tableHtml += '</tr></thead><tbody>';
+
+            // TOTAL row first
+            tableHtml += `<tr class="total-row"><td>TOTAL (Top 10)</td><td class="number">${formatCurrency(grandTotal)}</td>${monthTotals.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
+
+            top10Accounts.forEach(acc => {
+                const monthlyAmounts = months.map(({ y, m }) => processedData.monthlyRevenue[getMonthKey(m, y)]?.accounts[acc.name] || 0);
+                tableHtml += `<tr><td>${acc.name}</td><td class="number">${formatCurrency(acc.amount)}</td>${monthlyAmounts.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
+            });
+
+            tableHtml += '</tbody>';
+            document.getElementById('key-accounts-table').innerHTML = tableHtml;
+        }
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+
+        async function initialize() {
+            try {
+                // Load data
+                const success = await loadAllData();
+                if (!success) {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    return;
+                }
+
+                // Process data
+                processAllData();
+
+                // Set default selected month
+                selectedMonth = getAvailableMonths()[0];
+
+                // Update UI
+                document.getElementById('last-update').textContent = new Date().toLocaleString();
+
+                // Tab switching
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        handleTabSwitch(btn.dataset.tab);
+                    });
+                });
+
+                // Render initial content
+                renderFilterBar();
+                renderMonthlyOverview();
+
+                // Hide loading overlay
+                document.getElementById('loading-overlay').style.display = 'none';
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('An error occurred while initializing the dashboard.');
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        // Start initialization on page load
+        window.addEventListener('load', initialize);
+    </script>
+</body>
+</html>
