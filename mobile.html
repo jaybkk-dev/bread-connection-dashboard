@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bread Connection - Monthly Overview</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <style>
+        :root {
+            --cyan-dark2: #0C343D;
+            --cyan-dark1: #134F5C;
+            --cyan-base: #45818E;
+            --cyan-light1: #76A5AF;
+            --cyan-light2: #A2C4C9;
+            --cyan-light3: #D0E0E3;
+            --accent-gold: #d4a843;
+            --positive: #2c7a3a;
+            --negative: #c43c3c;
+            --white: #ffffff;
+            --gray-light: #f8f9fa;
+            --gray-border: #e0e0e0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--gray-light);
+            color: var(--cyan-dark2);
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        .header {
+            background-color: var(--cyan-dark1);
+            color: var(--white);
+            padding: 14px 16px;
+            text-align: center;
+        }
+        .header h1 { font-size: 17px; font-weight: 700; }
+        .header p { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+
+        /* Tab title */
+        .tab-title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan-dark2);
+            padding: 14px 16px 6px;
+        }
+
+        /* Filter bar */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-border);
+            flex-wrap: wrap;
+        }
+        .filter-bar label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--cyan-dark2);
+        }
+        .filter-bar select {
+            padding: 6px 8px;
+            border: 1px solid var(--gray-border);
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            background: var(--white);
+            color: var(--cyan-dark2);
+        }
+        .filter-bar .tax-toggle {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--cyan-base);
+        }
+        .filter-bar .tax-toggle input { width: 14px; height: 14px; }
+
+        /* Content */
+        .content { padding: 12px 16px; }
+
+        /* Net note */
+        .net-note {
+            font-size: 10px;
+            color: var(--cyan-light1);
+            text-align: center;
+            padding: 4px 16px 0;
+        }
+
+        /* KPI Cards — stacked, left gold border */
+        .kpi-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .kpi-card {
+            background: var(--white);
+            border: 1px solid var(--gray-border);
+            border-left: 4px solid var(--accent-gold);
+            border-radius: 6px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .kpi-card .kpi-left { flex: 1; }
+        .kpi-card h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .kpi-card .subtitle {
+            font-size: 10px;
+            color: var(--cyan-light1);
+            margin-top: 2px;
+        }
+        .kpi-card .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--cyan-dark2);
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        .kpi-card.positive .value { color: var(--positive); }
+        .kpi-card.negative .value { color: var(--negative); }
+
+        /* Tables */
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--cyan-dark2);
+            margin: 16px 0 8px;
+        }
+        .table-container {
+            background: var(--white);
+            border: 1px solid var(--gray-border);
+            border-top: 3px solid var(--accent-gold);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        thead { background-color: var(--cyan-dark1); color: var(--white); }
+        th {
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        td {
+            padding: 7px 10px;
+            border-bottom: 1px solid #eee;
+            font-variant-numeric: tabular-nums;
+        }
+        .number { text-align: right; }
+        .percentage { text-align: right; }
+        tbody tr.total-row {
+            background-color: var(--cyan-dark2);
+            color: var(--white);
+            font-weight: 700;
+        }
+        tbody tr:nth-child(even):not(.total-row) { background-color: #fafafa; }
+        /* Truncate long account names */
+        td.account-name {
+            max-width: 160px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Chart */
+        .chart-container {
+            background: var(--white);
+            border: 1px solid var(--gray-border);
+            border-top: 3px solid var(--accent-gold);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        .chart-container h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--cyan-dark2);
+            margin-bottom: 8px;
+        }
+        .chart-wrap { position: relative; height: 220px; }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 3px solid var(--cyan-light3);
+            border-top: 3px solid var(--cyan-dark1);
+            border-radius: 50%; width: 32px; height: 32px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner-text { margin-top: 12px; font-size: 13px; color: var(--cyan-base); }
+
+        .error-banner {
+            background: #ffebee; border-left: 4px solid var(--negative);
+            padding: 12px 16px; margin: 12px 16px; border-radius: 4px;
+            color: var(--negative); font-size: 13px; display: none;
+        }
+        .error-banner.show { display: block; }
+
+        /* Desktop notice */
+        @media (min-width: 600px) {
+            body { max-width: 480px; margin: 0 auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>&#x1F4E6; Bread Connection Financial Dashboard</h1>
+        <p>Live data from Google Sheets &bull; Last updated: <span id="last-update">—</span></p>
+    </div>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="spinner-text">Fetching data from Google Sheets...</div>
+    </div>
+
+    <div class="tab-title">Monthly Overview</div>
+    <p class="net-note" id="net-note">All figures are net amounts before tax</p>
+
+    <div class="filter-bar" id="filter-bar"></div>
+
+    <div class="content">
+        <div class="kpi-stack" id="kpi-stack"></div>
+
+        <div class="section-title">Top 10 Accounts</div>
+        <div class="table-container">
+            <table id="accounts-table"></table>
+        </div>
+
+        <div class="chart-container">
+            <h3>Revenue by Channel &mdash; Last 6 Months</h3>
+            <div class="chart-wrap">
+                <canvas id="channel-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'AIzaSyDqdoKrfUor7TS0XKM5l1SB_kYrVSFgt40';
+        const SHEET_ID = '18VgoCI2jqPPOu7zc3POLHnRcVP13krHmW6PCTj_Ivd4';
+
+        const CHART_COLORS = ['#134F5C', '#45818E', '#76A5AF'];
+
+        let allData = { inc: [] };
+        let processedData = { monthlyRevenue: {}, topAccounts: [] };
+        let selectedMonth = null;
+        let showAfterTax = false;
+
+        // Utilities
+        function formatCurrency(num) {
+            if (!num) return '';
+            return '฿' + Math.round(num).toLocaleString('en-US');
+        }
+        function parseNumber(str) {
+            if (!str) return 0;
+            if (typeof str === 'number') return str;
+            return parseFloat(str.toString().replace(/,/g, '')) || 0;
+        }
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            if (dateStr.includes('/')) { const [d, m, y] = dateStr.split('/'); return new Date(y, m - 1, d); }
+            return new Date(dateStr);
+        }
+        function getMonthKey(month, year) { return `${year}-${String(month).padStart(2, '0')}`; }
+        function getLastDayOfMonth(month, year) { return new Date(year, month, 0).getDate(); }
+
+        // API
+        async function fetchSheetData(tabName) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${tabName}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            return data.values || [];
+        }
+
+        // Process INC data only (that's all we need for Monthly Overview)
+        function processIncomeData() {
+            processedData.monthlyRevenue = {};
+            processedData.topAccounts = {};
+
+            allData.inc.forEach((row, idx) => {
+                if (idx === 0) return;
+                const month = parseNumber(row[0]);
+                const year = parseNumber(row[1]);
+                const transactionDate = row[2];
+                const salesType = row[3];
+                const accountName = row[4];
+                const netAmount = parseNumber(row[6]);
+                const grossAmount = parseNumber(row[13]);
+
+                if (!month || !year || !netAmount) return;
+                const monthKey = getMonthKey(month, year);
+
+                if (!processedData.monthlyRevenue[monthKey]) {
+                    processedData.monthlyRevenue[monthKey] = {
+                        month, year, accounts: {}, byChannel: {},
+                        total: 0, totalWithTax: 0, lastRecordDate: transactionDate
+                    };
+                }
+
+                if (transactionDate) {
+                    const newDate = parseDate(transactionDate);
+                    const existingDate = parseDate(processedData.monthlyRevenue[monthKey].lastRecordDate);
+                    if (!existingDate || (newDate && newDate > existingDate)) {
+                        processedData.monthlyRevenue[monthKey].lastRecordDate = transactionDate;
+                    }
+                }
+
+                if (accountName) {
+                    processedData.monthlyRevenue[monthKey].accounts[accountName] = (processedData.monthlyRevenue[monthKey].accounts[accountName] || 0) + netAmount;
+                    processedData.topAccounts[accountName] = (processedData.topAccounts[accountName] || 0) + netAmount;
+                }
+                if (salesType) {
+                    processedData.monthlyRevenue[monthKey].byChannel[salesType] = (processedData.monthlyRevenue[monthKey].byChannel[salesType] || 0) + netAmount;
+                }
+                processedData.monthlyRevenue[monthKey].total += netAmount;
+                processedData.monthlyRevenue[monthKey].totalWithTax += (grossAmount || netAmount);
+            });
+
+            processedData.topAccounts = Object.entries(processedData.topAccounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, amount]) => ({ name, amount }));
+        }
+
+        function getAvailableMonths() {
+            return Object.keys(processedData.monthlyRevenue).sort().reverse();
+        }
+
+        // Filter bar
+        function renderFilterBar() {
+            const months = getAvailableMonths();
+            const availableYears = [...new Set(months.map(m => m.split('-')[0]))].sort().reverse();
+            const selectedYr = selectedMonth ? selectedMonth.split('-')[0] : availableYears[0];
+            const monthsForYear = months.filter(m => m.startsWith(selectedYr));
+            const selectedMthNum = selectedMonth && selectedMonth.startsWith(selectedYr)
+                ? selectedMonth.split('-')[1]
+                : (monthsForYear[0] ? monthsForYear[0].split('-')[1] : '01');
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+            document.getElementById('filter-bar').innerHTML = `
+                <label>Year:</label>
+                <select id="year-sel" onchange="handleYearChange()">
+                    ${availableYears.map(y => `<option value="${y}" ${y === selectedYr ? 'selected' : ''}>${y}</option>`).join('')}
+                </select>
+                <label>Month:</label>
+                <select id="month-sel" onchange="handleMonthChange()">
+                    ${monthsForYear.map(m => {
+                        const mn = m.split('-')[1];
+                        return `<option value="${m}" ${mn === selectedMthNum ? 'selected' : ''}>${monthNames[parseInt(mn) - 1]}</option>`;
+                    }).join('')}
+                </select>
+                <div class="tax-toggle">
+                    <input type="checkbox" id="tax-toggle" ${showAfterTax ? 'checked' : ''} onchange="handleTaxToggle()">
+                    <label for="tax-toggle">Incl. Tax (gross)</label>
+                </div>
+            `;
+        }
+
+        function handleYearChange() {
+            const yr = document.getElementById('year-sel').value;
+            const monthsForYear = getAvailableMonths().filter(m => m.startsWith(yr));
+            selectedMonth = monthsForYear[0] || selectedMonth;
+            renderFilterBar();
+            render();
+        }
+        function handleMonthChange() {
+            selectedMonth = document.getElementById('month-sel').value;
+            render();
+        }
+        function handleTaxToggle() {
+            showAfterTax = document.getElementById('tax-toggle').checked;
+            document.getElementById('net-note').textContent = showAfterTax
+                ? 'All figures are gross amounts including tax'
+                : 'All figures are net amounts before tax';
+            render();
+        }
+
+        // Render
+        let channelChart = null;
+
+        function render() {
+            const monthKey = selectedMonth || getAvailableMonths()[0];
+            const data = processedData.monthlyRevenue[monthKey];
+            if (!data) return;
+
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            const [dataYear, dataMonth] = monthKey.split('-').map(Number);
+            const daysInMonth = getLastDayOfMonth(dataMonth, dataYear);
+            const isCurrentMonth = dataYear === currentYear && dataMonth === currentMonth;
+
+            let daysElapsed;
+            if (isCurrentMonth && data.lastRecordDate) {
+                const lastRecord = parseDate(data.lastRecordDate);
+                daysElapsed = lastRecord ? lastRecord.getDate() : now.getDate();
+            } else {
+                daysElapsed = daysInMonth;
+            }
+
+            const totalRevenue = showAfterTax ? (data.totalWithTax || data.total) : data.total;
+            const dailyAverage = totalRevenue / daysElapsed;
+            const projectedRevenue = dailyAverage * daysInMonth;
+
+            let yoyChange = 0;
+            const prevKey = getMonthKey(dataMonth, dataYear - 1);
+            if (processedData.monthlyRevenue[prevKey]) {
+                const prevData = processedData.monthlyRevenue[prevKey];
+                const prevTotal = showAfterTax ? (prevData.totalWithTax || prevData.total) : prevData.total;
+                yoyChange = prevTotal > 0 ? ((totalRevenue - prevTotal) / prevTotal) * 100 : 0;
+            }
+
+            const lastRecordDate = data.lastRecordDate || 'Unknown';
+
+            // KPI cards
+            document.getElementById('kpi-stack').innerHTML = `
+                <div class="kpi-card">
+                    <div class="kpi-left">
+                        <h3>Revenue to Date</h3>
+                        <div class="subtitle">Last record on ${lastRecordDate}</div>
+                    </div>
+                    <div class="value">${formatCurrency(totalRevenue)}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-left">
+                        <h3>Daily Average</h3>
+                        <div class="subtitle">${daysElapsed} days elapsed</div>
+                    </div>
+                    <div class="value">${formatCurrency(dailyAverage)}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-left">
+                        <h3>Projected Revenue</h3>
+                        <div class="subtitle">${daysInMonth} days in month</div>
+                    </div>
+                    <div class="value">${formatCurrency(projectedRevenue)}</div>
+                </div>
+                <div class="kpi-card ${yoyChange >= 0 ? 'positive' : 'negative'}">
+                    <div class="kpi-left">
+                        <h3>YoY Change</h3>
+                        <div class="subtitle">vs same month last year</div>
+                    </div>
+                    <div class="value">${yoyChange >= 0 ? '+' : ''}${yoyChange.toFixed(1)}%</div>
+                </div>
+            `;
+
+            // Top 10 table
+            const accounts = Object.entries(data.accounts)
+                .map(([name, amount]) => ({ name, amount }))
+                .sort((a, b) => b.amount - a.amount);
+            const top10 = accounts.slice(0, 10);
+
+            let tableHtml = '<thead><tr><th>Account</th><th class="number">Total</th><th class="percentage">Share %</th></tr></thead><tbody>';
+            tableHtml += `<tr class="total-row"><td>TOTAL</td><td class="number">${formatCurrency(data.total)}</td><td class="percentage">100%</td></tr>`;
+            top10.forEach(acc => {
+                const share = (acc.amount / data.total * 100).toFixed(1);
+                tableHtml += `<tr><td class="account-name">${acc.name}</td><td class="number">${formatCurrency(acc.amount)}</td><td class="percentage">${share}%</td></tr>`;
+            });
+            tableHtml += '</tbody>';
+            document.getElementById('accounts-table').innerHTML = tableHtml;
+
+            // Channel chart
+            const last6Keys = getAvailableMonths().slice(0, 6).reverse();
+            const channelNames = ['PO SALES', 'BRANCH SALES', 'DIRECT SALES'];
+            const channelDatasets = channelNames.map((ch, i) => ({
+                label: ch,
+                data: last6Keys.map(k => processedData.monthlyRevenue[k]?.byChannel[ch] || 0),
+                backgroundColor: CHART_COLORS[i],
+                borderWidth: 0
+            }));
+            const channelLabels = last6Keys.map(k => {
+                const [y, m] = k.split('-');
+                return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+
+            if (channelChart) channelChart.destroy();
+            channelChart = new Chart(document.getElementById('channel-chart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: channelLabels, datasets: channelDatasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 8, boxWidth: 10 }
+                        },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { stacked: true, ticks: { font: { size: 10 }, callback: v => '฿' + Math.round(v / 1000) + 'k' } }
+                    }
+                }
+            });
+        }
+
+        // Init
+        async function initialize() {
+            try {
+                allData.inc = await fetchSheetData('INC');
+                processIncomeData();
+                selectedMonth = getAvailableMonths()[0];
+                document.getElementById('last-update').textContent = new Date().toLocaleString();
+                renderFilterBar();
+                render();
+                document.getElementById('loading-overlay').style.display = 'none';
+            } catch (error) {
+                console.error('Init error:', error);
+                const banner = document.getElementById('error-banner');
+                banner.textContent = 'Failed to fetch data. Please check your connection and refresh.';
+                banner.classList.add('show');
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        window.addEventListener('load', initialize);
+    </script>
+</body>
+</html>
