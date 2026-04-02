@@ -466,7 +466,7 @@
                 <div class="kpi-card ${yoyChange >= 0 ? 'positive' : 'negative'}">
                     <div class="kpi-label">
                         <h3>YoY Change</h3>
-                        <div class="subtitle">vs same ${daysElapsed} days last year</div>
+                        <div class="subtitle">prorated to ${daysElapsed} day${daysElapsed > 1 ? 's' : ''} elapsed</div>
                     </div>
                     <div class="kpi-value">${yoyChange >= 0 ? '+' : ''}${yoyChange.toFixed(1)}%</div>
                 </div>
