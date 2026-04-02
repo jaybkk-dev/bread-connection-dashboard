@@ -1429,7 +1429,10 @@
             if (processedData.monthlyRevenue[previousYearKey]) {
                 const prevData = processedData.monthlyRevenue[previousYearKey];
                 const previousYearTotal = showAfterTax ? (prevData.totalWithTax || prevData.total) : prevData.total;
-                yoyChange = previousYearTotal > 0 ? ((totalRevenue - previousYearTotal) / previousYearTotal) * 100 : 0;
+                // Prorate prior year to same number of elapsed days for fair comparison
+                const prevDaysInMonth = new Date(dataYear - 1, dataMonth, 0).getDate();
+                const priorProrated = (previousYearTotal / prevDaysInMonth) * daysElapsed;
+                yoyChange = priorProrated > 0 ? ((totalRevenue - priorProrated) / priorProrated) * 100 : 0;
             }
 
             const lastRecordDate = data.lastRecordDate || 'Unknown';
@@ -1454,7 +1457,7 @@
                 <div class="kpi-card ${yoyChange >= 0 ? 'positive' : 'negative'}">
                     <h3>YoY Change</h3>
                     <div class="value">${yoyChange >= 0 ? '+' : ''}${yoyChange.toFixed(1)}%</div>
-                    <div class="subtitle">vs same month last year</div>
+                    <div class="subtitle">vs same ${daysElapsed} days last year</div>
                 </div>
             `;
             document.getElementById('monthly-kpi-grid').innerHTML = kpiHtml;

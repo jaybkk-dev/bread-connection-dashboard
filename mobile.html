@@ -19,7 +19,7 @@
             --positive: #2c7a3a;
             --negative: #c43c3c;
             --white: #ffffff;
-            --gray-light: #f8f9fa;
+            --gray-light: #f0f6f7;
             --gray-border: #e0e0e0;
         }
 
@@ -40,11 +40,21 @@
             padding: 14px 16px;
             text-align: center;
         }
-        .header h1 { font-size: 17px; font-weight: 700; }
-        .header p { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+        .header h1 {
+            font-size: 17px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .header p {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
 
-        /* Tab title */
-        .tab-title {
+        .page-title {
             text-align: center;
             font-size: 16px;
             font-weight: 600;
@@ -55,11 +65,11 @@
         /* Filter bar */
         .filter-bar {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            gap: 10px;
             padding: 10px 16px;
             background: var(--white);
             border-bottom: 1px solid var(--gray-border);
+            align-items: center;
             flex-wrap: wrap;
         }
         .filter-bar label {
@@ -76,185 +86,226 @@
             background: var(--white);
             color: var(--cyan-dark2);
         }
-        .filter-bar .tax-toggle {
-            margin-left: auto;
+        .tax-toggle {
             display: flex;
             align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            color: var(--cyan-base);
+            gap: 5px;
+            margin-left: auto;
         }
-        .filter-bar .tax-toggle input { width: 14px; height: 14px; }
-
-        /* Content */
-        .content { padding: 12px 16px; }
+        .tax-toggle input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .tax-toggle label {
+            font-size: 11px;
+            white-space: nowrap;
+        }
 
         /* Net note */
         .net-note {
             font-size: 10px;
             color: var(--cyan-light1);
-            text-align: center;
-            padding: 4px 16px 0;
+            padding: 6px 16px 0;
         }
 
-        /* KPI Cards — stacked, left gold border */
-        .kpi-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        /* Content */
+        .content {
+            padding: 0 12px 20px;
+        }
+
+        /* KPI Cards — stacked vertically */
+        .kpi-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 10px 0;
+        }
         .kpi-card {
             background: var(--white);
             border: 1px solid var(--gray-border);
-            border-left: 4px solid var(--accent-gold);
+            border-left: 4px solid var(--cyan-base);
             border-radius: 6px;
             padding: 12px 14px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
         }
-        .kpi-card .kpi-left { flex: 1; }
-        .kpi-card h3 {
+        .kpi-card.positive { border-left-color: var(--positive); }
+        .kpi-card.negative { border-left-color: var(--negative); }
+
+        .kpi-label h3 {
             font-size: 11px;
             font-weight: 600;
-            color: var(--accent-gold);
+            color: var(--cyan-base);
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-        .kpi-card .subtitle {
+        .kpi-card.positive .kpi-label h3 { color: var(--positive); }
+        .kpi-card.negative .kpi-label h3 { color: var(--negative); }
+
+        .kpi-label .subtitle {
             font-size: 10px;
             color: var(--cyan-light1);
-            margin-top: 2px;
+            margin-top: 1px;
         }
-        .kpi-card .value {
-            font-size: 18px;
+        .kpi-value {
+            font-size: 20px;
             font-weight: 700;
             color: var(--cyan-dark2);
-            white-space: nowrap;
             font-variant-numeric: tabular-nums;
         }
-        .kpi-card.positive .value { color: var(--positive); }
-        .kpi-card.negative .value { color: var(--negative); }
+        .kpi-card.positive .kpi-value { color: var(--positive); }
+        .kpi-card.negative .kpi-value { color: var(--negative); }
 
         /* Tables */
         .section-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--cyan-dark2);
-            margin: 16px 0 8px;
+            padding: 16px 4px 8px;
         }
         .table-container {
             background: var(--white);
             border: 1px solid var(--gray-border);
-            border-top: 3px solid var(--accent-gold);
             border-radius: 6px;
             overflow: hidden;
-            margin-bottom: 16px;
         }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        thead { background-color: var(--cyan-dark1); color: var(--white); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        thead {
+            background: var(--cyan-dark1);
+            color: var(--white);
+        }
         th {
-            padding: 8px 10px;
+            padding: 7px 8px;
             text-align: left;
             font-weight: 600;
             text-transform: uppercase;
             font-size: 10px;
             letter-spacing: 0.3px;
-            white-space: nowrap;
         }
         td {
-            padding: 7px 10px;
+            padding: 7px 8px;
             border-bottom: 1px solid #eee;
             font-variant-numeric: tabular-nums;
         }
         .number { text-align: right; }
-        .percentage { text-align: right; }
-        tbody tr.total-row {
-            background-color: var(--cyan-dark2);
+        tr.total-row {
+            background: var(--cyan-dark2);
             color: var(--white);
             font-weight: 700;
         }
-        tbody tr:nth-child(even):not(.total-row) { background-color: #fafafa; }
-        /* Truncate long account names */
-        td.account-name {
-            max-width: 160px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        tr.total-row td { border-bottom-color: var(--cyan-dark1); }
+        tbody tr:nth-child(even):not(.total-row) {
+            background-color: #f8fafa;
         }
 
         /* Chart */
         .chart-container {
             background: var(--white);
             border: 1px solid var(--gray-border);
-            border-top: 3px solid var(--accent-gold);
             border-radius: 6px;
             padding: 12px;
-            margin-bottom: 16px;
+            margin-top: 16px;
         }
         .chart-container h3 {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--cyan-dark2);
             margin-bottom: 8px;
         }
-        .chart-wrap { position: relative; height: 220px; }
+        .chart-wrapper {
+            position: relative;
+            height: 220px;
+        }
 
         /* Loading */
         .loading-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.95);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
         }
         .spinner {
             border: 3px solid var(--cyan-light3);
             border-top: 3px solid var(--cyan-dark1);
-            border-radius: 50%; width: 32px; height: 32px;
+            border-radius: 50%;
+            width: 32px; height: 32px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .spinner-text { margin-top: 12px; font-size: 13px; color: var(--cyan-base); }
-
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner-text {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--cyan-base);
+        }
         .error-banner {
-            background: #ffebee; border-left: 4px solid var(--negative);
-            padding: 12px 16px; margin: 12px 16px; border-radius: 4px;
-            color: var(--negative); font-size: 13px; display: none;
+            background: #ffebee;
+            border-left: 4px solid var(--negative);
+            padding: 12px 16px;
+            margin: 12px;
+            border-radius: 4px;
+            color: var(--negative);
+            font-size: 13px;
+            display: none;
         }
         .error-banner.show { display: block; }
 
-        /* Desktop notice */
-        @media (min-width: 600px) {
-            body { max-width: 480px; margin: 0 auto; }
+        /* Hide on desktop */
+        @media (min-width: 900px) {
+            body::after {
+                content: 'This page is designed for mobile devices. Please use the desktop dashboard instead.';
+                position: fixed;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: var(--white);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                color: var(--cyan-base);
+                text-align: center;
+                padding: 40px;
+                z-index: 10000;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>&#x1F4E6; Bread Connection Financial Dashboard</h1>
-        <p>Live data from Google Sheets &bull; Last updated: <span id="last-update">—</span></p>
-    </div>
-
-    <div class="error-banner" id="error-banner"></div>
-
     <div class="loading-overlay" id="loading-overlay">
         <div class="spinner"></div>
         <div class="spinner-text">Fetching data from Google Sheets...</div>
     </div>
 
-    <div class="tab-title">Monthly Overview</div>
-    <p class="net-note" id="net-note">All figures are net amounts before tax</p>
+    <div class="error-banner" id="error-banner"></div>
+
+    <div class="header">
+        <h1>🍞 Bread Connection Financial Dashboard</h1>
+        <p>Live data from Google Sheets • Last updated: <span id="last-update"></span></p>
+    </div>
+
+    <h2 class="page-title">Monthly Overview</h2>
 
     <div class="filter-bar" id="filter-bar"></div>
 
-    <div class="content">
-        <div class="kpi-stack" id="kpi-stack"></div>
+    <p class="net-note" id="net-note">All figures are net amounts before tax</p>
 
-        <div class="section-title">Top 10 Accounts</div>
+    <div class="content">
+        <div class="kpi-stack" id="kpi-cards"></div>
+        <h3 class="section-title">Top 10 Accounts</h3>
         <div class="table-container">
             <table id="accounts-table"></table>
         </div>
-
         <div class="chart-container">
-            <h3>Revenue by Channel &mdash; Last 6 Months</h3>
-            <div class="chart-wrap">
+            <h3>Revenue by Channel — Last 6 Months</h3>
+            <div class="chart-wrapper">
                 <canvas id="channel-chart"></canvas>
             </div>
         </div>
@@ -263,157 +314,107 @@
     <script>
         const API_KEY = 'AIzaSyDqdoKrfUor7TS0XKM5l1SB_kYrVSFgt40';
         const SHEET_ID = '18VgoCI2jqPPOu7zc3POLHnRcVP13krHmW6PCTj_Ivd4';
+        const CHART_COLORS = ['#134F5C', '#45818E', '#76A5AF', '#A2C4C9', '#d4a843'];
 
-        const CHART_COLORS = ['#134F5C', '#45818E', '#76A5AF'];
-
-        let allData = { inc: [] };
-        let processedData = { monthlyRevenue: {}, topAccounts: [] };
+        let processedData = { monthlyRevenue: {}, clientCategories: {} };
         let selectedMonth = null;
         let showAfterTax = false;
+        let channelChart = null;
 
         // Utilities
         function formatCurrency(num) {
             if (!num) return '';
             return '฿' + Math.round(num).toLocaleString('en-US');
         }
+
         function parseNumber(str) {
             if (!str) return 0;
             if (typeof str === 'number') return str;
             return parseFloat(str.toString().replace(/,/g, '')) || 0;
         }
+
         function parseDate(dateStr) {
             if (!dateStr) return null;
-            if (dateStr.includes('/')) { const [d, m, y] = dateStr.split('/'); return new Date(y, m - 1, d); }
+            if (dateStr.includes('/')) {
+                const [d, m, y] = dateStr.split('/');
+                return new Date(y, m - 1, d);
+            }
             return new Date(dateStr);
         }
-        function getMonthKey(month, year) { return `${year}-${String(month).padStart(2, '0')}`; }
-        function getLastDayOfMonth(month, year) { return new Date(year, month, 0).getDate(); }
+
+        function getMonthKey(m, y) { return `${y}-${String(m).padStart(2, '0')}`; }
 
         // API
-        async function fetchSheetData(tabName) {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${tabName}?key=${API_KEY}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
+        async function fetchSheet(tab) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${tab}?key=${API_KEY}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
             return data.values || [];
         }
 
-        // Process INC data only (that's all we need for Monthly Overview)
-        function processIncomeData() {
-            processedData.monthlyRevenue = {};
-            processedData.topAccounts = {};
-
-            allData.inc.forEach((row, idx) => {
-                if (idx === 0) return;
-                const month = parseNumber(row[0]);
-                const year = parseNumber(row[1]);
-                const transactionDate = row[2];
-                const salesType = row[3];
-                const accountName = row[4];
-                const netAmount = parseNumber(row[6]);
-                const grossAmount = parseNumber(row[13]);
-
-                if (!month || !year || !netAmount) return;
+        // Process income data (same logic as main dashboard)
+        function processIncomeData(rows) {
+            rows.forEach((row, idx) => {
+                if (idx < 2) return;
+                const month = parseInt(row[0]);
+                const year = parseInt(row[1]);
+                if (!month || !year) return;
                 const monthKey = getMonthKey(month, year);
+                const amount = parseNumber(row[6]);
+                const amountWithTax = parseNumber(row[13]);
+                const salesType = (row[4] || '').toString().trim().toUpperCase();
+                const accountName = (row[3] || '').toString().trim().toUpperCase();
+                const transactionDate = row[2];
 
                 if (!processedData.monthlyRevenue[monthKey]) {
                     processedData.monthlyRevenue[monthKey] = {
-                        month, year, accounts: {}, byChannel: {},
-                        total: 0, totalWithTax: 0, lastRecordDate: transactionDate
+                        total: 0, totalWithTax: 0, accounts: {}, byChannel: {}, lastRecordDate: null
                     };
                 }
+                const d = processedData.monthlyRevenue[monthKey];
+                d.total += amount;
+                d.totalWithTax += amountWithTax;
+                d.accounts[accountName] = (d.accounts[accountName] || 0) + amount;
+                d.byChannel[salesType] = (d.byChannel[salesType] || 0) + amount;
 
                 if (transactionDate) {
                     const newDate = parseDate(transactionDate);
-                    const existingDate = parseDate(processedData.monthlyRevenue[monthKey].lastRecordDate);
+                    const existingDate = parseDate(d.lastRecordDate);
                     if (!existingDate || (newDate && newDate > existingDate)) {
-                        processedData.monthlyRevenue[monthKey].lastRecordDate = transactionDate;
+                        d.lastRecordDate = transactionDate;
                     }
                 }
-
-                if (accountName) {
-                    processedData.monthlyRevenue[monthKey].accounts[accountName] = (processedData.monthlyRevenue[monthKey].accounts[accountName] || 0) + netAmount;
-                    processedData.topAccounts[accountName] = (processedData.topAccounts[accountName] || 0) + netAmount;
-                }
-                if (salesType) {
-                    processedData.monthlyRevenue[monthKey].byChannel[salesType] = (processedData.monthlyRevenue[monthKey].byChannel[salesType] || 0) + netAmount;
-                }
-                processedData.monthlyRevenue[monthKey].total += netAmount;
-                processedData.monthlyRevenue[monthKey].totalWithTax += (grossAmount || netAmount);
             });
+        }
 
-            processedData.topAccounts = Object.entries(processedData.topAccounts)
-                .sort((a, b) => b[1] - a[1])
-                .map(([name, amount]) => ({ name, amount }));
+        function processClientData(rows) {
+            rows.forEach((row, idx) => {
+                if (idx < 2) return;
+                const code = row[2], name = row[3];
+                if (code && name) processedData.clientCategories[name] = code;
+            });
         }
 
         function getAvailableMonths() {
             return Object.keys(processedData.monthlyRevenue).sort().reverse();
         }
 
-        // Filter bar
-        function renderFilterBar() {
-            const months = getAvailableMonths();
-            const availableYears = [...new Set(months.map(m => m.split('-')[0]))].sort().reverse();
-            const selectedYr = selectedMonth ? selectedMonth.split('-')[0] : availableYears[0];
-            const monthsForYear = months.filter(m => m.startsWith(selectedYr));
-            const selectedMthNum = selectedMonth && selectedMonth.startsWith(selectedYr)
-                ? selectedMonth.split('-')[1]
-                : (monthsForYear[0] ? monthsForYear[0].split('-')[1] : '01');
-            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-            document.getElementById('filter-bar').innerHTML = `
-                <label>Year:</label>
-                <select id="year-sel" onchange="handleYearChange()">
-                    ${availableYears.map(y => `<option value="${y}" ${y === selectedYr ? 'selected' : ''}>${y}</option>`).join('')}
-                </select>
-                <label>Month:</label>
-                <select id="month-sel" onchange="handleMonthChange()">
-                    ${monthsForYear.map(m => {
-                        const mn = m.split('-')[1];
-                        return `<option value="${m}" ${mn === selectedMthNum ? 'selected' : ''}>${monthNames[parseInt(mn) - 1]}</option>`;
-                    }).join('')}
-                </select>
-                <div class="tax-toggle">
-                    <input type="checkbox" id="tax-toggle" ${showAfterTax ? 'checked' : ''} onchange="handleTaxToggle()">
-                    <label for="tax-toggle">Incl. Tax (gross)</label>
-                </div>
-            `;
-        }
-
-        function handleYearChange() {
-            const yr = document.getElementById('year-sel').value;
-            const monthsForYear = getAvailableMonths().filter(m => m.startsWith(yr));
-            selectedMonth = monthsForYear[0] || selectedMonth;
-            renderFilterBar();
-            render();
-        }
-        function handleMonthChange() {
-            selectedMonth = document.getElementById('month-sel').value;
-            render();
-        }
-        function handleTaxToggle() {
-            showAfterTax = document.getElementById('tax-toggle').checked;
-            document.getElementById('net-note').textContent = showAfterTax
-                ? 'All figures are gross amounts including tax'
-                : 'All figures are net amounts before tax';
-            render();
-        }
-
         // Render
-        let channelChart = null;
-
         function render() {
-            const monthKey = selectedMonth || getAvailableMonths()[0];
+            const months = getAvailableMonths();
+            if (!months.length) return;
+
+            const monthKey = selectedMonth || months[0];
             const data = processedData.monthlyRevenue[monthKey];
             if (!data) return;
 
+            const [dataYearStr, dataMonthStr] = monthKey.split('-');
+            const dataYear = parseInt(dataYearStr);
+            const dataMonth = parseInt(dataMonthStr);
             const now = new Date();
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth() + 1;
-            const [dataYear, dataMonth] = monthKey.split('-').map(Number);
-            const daysInMonth = getLastDayOfMonth(dataMonth, dataYear);
-            const isCurrentMonth = dataYear === currentYear && dataMonth === currentMonth;
+            const isCurrentMonth = dataYear === now.getFullYear() && dataMonth === now.getMonth() + 1;
+            const daysInMonth = new Date(dataYear, dataMonth, 0).getDate();
 
             let daysElapsed;
             if (isCurrentMonth && data.lastRecordDate) {
@@ -432,68 +433,79 @@
             if (processedData.monthlyRevenue[prevKey]) {
                 const prevData = processedData.monthlyRevenue[prevKey];
                 const prevTotal = showAfterTax ? (prevData.totalWithTax || prevData.total) : prevData.total;
-                yoyChange = prevTotal > 0 ? ((totalRevenue - prevTotal) / prevTotal) * 100 : 0;
+                const prevDaysInMonth = new Date(dataYear - 1, dataMonth, 0).getDate();
+                const priorProrated = (prevTotal / prevDaysInMonth) * daysElapsed;
+                yoyChange = priorProrated > 0 ? ((totalRevenue - priorProrated) / priorProrated) * 100 : 0;
             }
 
             const lastRecordDate = data.lastRecordDate || 'Unknown';
 
             // KPI cards
-            document.getElementById('kpi-stack').innerHTML = `
+            document.getElementById('kpi-cards').innerHTML = `
                 <div class="kpi-card">
-                    <div class="kpi-left">
+                    <div class="kpi-label">
                         <h3>Revenue to Date</h3>
                         <div class="subtitle">Last record on ${lastRecordDate}</div>
                     </div>
-                    <div class="value">${formatCurrency(totalRevenue)}</div>
+                    <div class="kpi-value">${formatCurrency(totalRevenue)}</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-left">
+                    <div class="kpi-label">
                         <h3>Daily Average</h3>
                         <div class="subtitle">${daysElapsed} days elapsed</div>
                     </div>
-                    <div class="value">${formatCurrency(dailyAverage)}</div>
+                    <div class="kpi-value">${formatCurrency(dailyAverage)}</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-left">
+                    <div class="kpi-label">
                         <h3>Projected Revenue</h3>
                         <div class="subtitle">${daysInMonth} days in month</div>
                     </div>
-                    <div class="value">${formatCurrency(projectedRevenue)}</div>
+                    <div class="kpi-value">${formatCurrency(projectedRevenue)}</div>
                 </div>
                 <div class="kpi-card ${yoyChange >= 0 ? 'positive' : 'negative'}">
-                    <div class="kpi-left">
+                    <div class="kpi-label">
                         <h3>YoY Change</h3>
-                        <div class="subtitle">vs same month last year</div>
+                        <div class="subtitle">vs same ${daysElapsed} days last year</div>
                     </div>
-                    <div class="value">${yoyChange >= 0 ? '+' : ''}${yoyChange.toFixed(1)}%</div>
+                    <div class="kpi-value">${yoyChange >= 0 ? '+' : ''}${yoyChange.toFixed(1)}%</div>
                 </div>
             `;
 
-            // Top 10 table
-            const accounts = Object.entries(data.accounts)
-                .map(([name, amount]) => ({ name, amount }))
-                .sort((a, b) => b.amount - a.amount);
-            const top10 = accounts.slice(0, 10);
+            // Top 10 Accounts table
+            const accountEntries = Object.entries(data.accounts).sort((a, b) => b[1] - a[1]);
+            const top10 = accountEntries.slice(0, 10);
+            const monthTotal = top10.reduce((s, [, v]) => s + v, 0);
 
-            let tableHtml = '<thead><tr><th>Account</th><th class="number">Total</th><th class="percentage">Share %</th></tr></thead><tbody>';
-            tableHtml += `<tr class="total-row"><td>TOTAL</td><td class="number">${formatCurrency(data.total)}</td><td class="percentage">100%</td></tr>`;
-            top10.forEach(acc => {
-                const share = (acc.amount / data.total * 100).toFixed(1);
-                tableHtml += `<tr><td class="account-name">${acc.name}</td><td class="number">${formatCurrency(acc.amount)}</td><td class="percentage">${share}%</td></tr>`;
+            let tableHtml = `
+                <thead><tr>
+                    <th>Account</th>
+                    <th class="number">Total</th>
+                    <th class="number">Share %</th>
+                </tr></thead><tbody>
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td class="number">${formatCurrency(totalRevenue)}</td>
+                    <td class="number">100%</td>
+                </tr>
+            `;
+            top10.forEach(([name, amount]) => {
+                const pct = totalRevenue > 0 ? (amount / totalRevenue * 100).toFixed(1) : 0;
+                tableHtml += `<tr><td>${name}</td><td class="number">${formatCurrency(amount)}</td><td class="number">${pct}%</td></tr>`;
             });
             tableHtml += '</tbody>';
             document.getElementById('accounts-table').innerHTML = tableHtml;
 
-            // Channel chart
-            const last6Keys = getAvailableMonths().slice(0, 6).reverse();
+            // Channel bar chart — last 6 months
+            const last6 = months.slice(0, 6).reverse();
             const channelNames = ['PO SALES', 'BRANCH SALES', 'DIRECT SALES'];
-            const channelDatasets = channelNames.map((ch, i) => ({
+            const datasets = channelNames.map((ch, i) => ({
                 label: ch,
-                data: last6Keys.map(k => processedData.monthlyRevenue[k]?.byChannel[ch] || 0),
+                data: last6.map(k => processedData.monthlyRevenue[k]?.byChannel[ch] || 0),
                 backgroundColor: CHART_COLORS[i],
                 borderWidth: 0
             }));
-            const channelLabels = last6Keys.map(k => {
+            const chartLabels = last6.map(k => {
                 const [y, m] = k.split('-');
                 return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
             });
@@ -501,37 +513,95 @@
             if (channelChart) channelChart.destroy();
             channelChart = new Chart(document.getElementById('channel-chart').getContext('2d'), {
                 type: 'bar',
-                data: { labels: channelLabels, datasets: channelDatasets },
+                data: { labels: chartLabels, datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 8, boxWidth: 10 }
+                            labels: { font: { size: 9, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 }
                         },
                         datalabels: { display: false }
                     },
                     scales: {
                         x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
-                        y: { stacked: true, ticks: { font: { size: 10 }, callback: v => '฿' + Math.round(v / 1000) + 'k' } }
+                        y: { stacked: true, ticks: { font: { size: 9 }, callback: v => '฿' + Math.round(v / 1000) + 'k' } }
                     }
                 }
             });
         }
 
+        function renderFilterBar() {
+            const months = getAvailableMonths();
+            const currentYear = new Date().getFullYear();
+            const availableYears = [...new Set(months.map(m => m.split('-')[0]))]
+                .filter(y => parseInt(y) <= currentYear).sort().reverse();
+            const selMonth = selectedMonth || months[0];
+            const selYr = selMonth.split('-')[0];
+            const selMth = selMonth.split('-')[1];
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const monthsForYear = months.filter(m => m.startsWith(selYr));
+
+            document.getElementById('filter-bar').innerHTML = `
+                <label>Year:</label>
+                <select id="yr-sel" onchange="onYearChange()">
+                    ${availableYears.map(y => `<option value="${y}" ${y === selYr ? 'selected' : ''}>${y}</option>`).join('')}
+                </select>
+                <label>Month:</label>
+                <select id="mth-sel" onchange="onMonthChange()">
+                    ${monthsForYear.map(m => {
+                        const mn = parseInt(m.split('-')[1]);
+                        return `<option value="${mn}" ${String(mn).padStart(2,'0') === selMth ? 'selected' : ''}>${monthNames[mn-1]}</option>`;
+                    }).join('')}
+                </select>
+                <div class="tax-toggle">
+                    <input type="checkbox" id="tax-cb" ${showAfterTax ? 'checked' : ''} onchange="onTaxToggle()">
+                    <label for="tax-cb">Incl. Tax (gross)</label>
+                </div>
+            `;
+        }
+
+        function onYearChange() {
+            const yr = document.getElementById('yr-sel').value;
+            const monthsForYear = getAvailableMonths().filter(m => m.startsWith(yr));
+            selectedMonth = monthsForYear[0] || selectedMonth;
+            renderFilterBar();
+            render();
+        }
+
+        function onMonthChange() {
+            const yr = document.getElementById('yr-sel').value;
+            const mth = document.getElementById('mth-sel').value;
+            selectedMonth = `${yr}-${String(mth).padStart(2, '0')}`;
+            render();
+        }
+
+        function onTaxToggle() {
+            showAfterTax = document.getElementById('tax-cb').checked;
+            document.getElementById('net-note').textContent = showAfterTax
+                ? 'All figures are gross amounts including tax'
+                : 'All figures are net amounts before tax';
+            render();
+        }
+
         // Init
-        async function initialize() {
+        async function init() {
             try {
-                allData.inc = await fetchSheetData('INC');
-                processIncomeData();
+                const [inc, clients] = await Promise.all([
+                    fetchSheet('INC'),
+                    fetchSheet('CLIENTS')
+                ]);
+                processIncomeData(inc);
+                processClientData(clients);
+
                 selectedMonth = getAvailableMonths()[0];
                 document.getElementById('last-update').textContent = new Date().toLocaleString();
                 renderFilterBar();
                 render();
                 document.getElementById('loading-overlay').style.display = 'none';
-            } catch (error) {
-                console.error('Init error:', error);
+            } catch (e) {
+                console.error('Init error:', e);
                 const banner = document.getElementById('error-banner');
                 banner.textContent = 'Failed to fetch data. Please check your connection and refresh.';
                 banner.classList.add('show');
@@ -539,7 +609,7 @@
             }
         }
 
-        window.addEventListener('load', initialize);
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
