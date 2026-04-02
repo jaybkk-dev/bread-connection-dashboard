@@ -17,7 +17,7 @@
             --cyan-light2: #A2C4C9;
             --cyan-light3: #D0E0E3;
             --accent-gold: #d4a843;
-            --accent-rose: #f4cccc;
+            --accent-rose: #B45D43;
             --accent-red: #e06666;
             --accent-mauve: #744848;
             --accent-charcoal: #5b5b5b;
@@ -301,11 +301,11 @@
         #monthly-overview .chart-container { border-top: 3px solid var(--accent-gold); }
 
         /* Accrual P&L — mauve/rose accent */
-        #profit-loss .kpi-card h3 { color: var(--accent-mauve); }
+        #profit-loss .kpi-card h3 { color: var(--accent-rose); }
         #profit-loss .kpi-card { border-top: 3px solid var(--accent-rose); }
-        #profit-loss .section-header-row td { background-color: var(--accent-rose); color: var(--accent-mauve); border-left: 4px solid var(--accent-mauve); }
-        #profit-loss .profit-row { background-color: var(--accent-rose); }
-        #profit-loss .profit-row td:first-child { color: var(--accent-mauve); }
+        #profit-loss .section-header-row td { background-color: #e8c9b8; color: var(--accent-rose); border-left: 4px solid var(--accent-rose); }
+        #profit-loss .profit-row { background-color: #fdf0e9; }
+        #profit-loss .profit-row td:first-child { color: var(--accent-rose); font-weight: 700; }
 
         /* Expense Analysis — red accent */
         #expenses .kpi-card h3 { color: var(--accent-red); }
@@ -457,7 +457,7 @@
         }
 
         tbody tr.profit-row {
-            background-color: var(--cyan-light3);
+            background-color: #fdf0e9;
             font-weight: 700;
         }
 
@@ -1792,7 +1792,7 @@
             const priorGrossProfit = priorRevenue - priorCogs;
             tableHtml += `
                 <tr class="profit-row">
-                    <td style="position:sticky;left:0;background:var(--cyan-light3);">GROSS PROFIT</td>
+                    <td style="position:sticky;left:0;background:#fdf0e9;z-index:1;">GROSS PROFIT</td>
                     ${colorCell(grossProfit)}
                     ${yoyColorCols(grossProfit, priorGrossProfit)}
                     ${grossProfitByMonth.map(v => colorCell(v)).join('')}
@@ -1849,7 +1849,7 @@
             const priorOperatingProfit = priorGrossProfit - priorOpex;
             tableHtml += `
                 <tr class="profit-row">
-                    <td style="position:sticky;left:0;background:var(--cyan-light3);">OPERATING PROFIT</td>
+                    <td style="position:sticky;left:0;background:#fdf0e9;z-index:1;">OPERATING PROFIT</td>
                     ${colorCell(operatingProfit)}
                     ${yoyColorCols(operatingProfit, priorOperatingProfit)}
                     ${operatingProfitByMonth.map(v => colorCell(v)).join('')}
@@ -1902,7 +1902,7 @@
 
             tableHtml += `
                 <tr class="profit-row" style="font-size:14px;font-weight:700;">
-                    <td style="position:sticky;left:0;background:var(--cyan-light3);">NET RESULT</td>
+                    <td style="position:sticky;left:0;background:#fdf0e9;z-index:1;">NET RESULT</td>
                     ${colorCell(netResult)}
                     ${yoyColorCols(netResult, priorNetResult)}
                     ${netResultByMonth.map(v => colorCell(v)).join('')}
