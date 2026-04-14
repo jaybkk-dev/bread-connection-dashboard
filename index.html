@@ -1312,10 +1312,26 @@
                     </select>
                 `;
             } else if (currentTab === 'payroll') {
+                const payrollMonths = getCompleteMonths();
+                const payrollYears = [...new Set(payrollMonths.map(m => m.split('-')[0]))].sort().reverse();
+                const payrollSelKey = document.getElementById('payroll-month-selector')?.value || payrollMonths[0] || '';
+                const payrollSelYr = payrollSelKey ? payrollSelKey.split('-')[0] : payrollYears[0];
+                const payrollMonthsForYr = payrollMonths.filter(m => m.startsWith(payrollSelYr));
+                const payrollSelMth = payrollSelKey && payrollSelKey.startsWith(payrollSelYr)
+                    ? payrollSelKey.split('-')[1]
+                    : (payrollMonthsForYr[0] ? payrollMonthsForYr[0].split('-')[1] : '01');
+                const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                 html = `
                     <label>Year:</label>
-                    <select id="payroll-year-selector" onchange="renderPayroll()">
-                        ${getAvailableYears().map(y => `<option value="${y}">${y}</option>`).join('')}
+                    <select id="payroll-year-selector" onchange="handlePayrollYearChange()">
+                        ${payrollYears.map(y => `<option value="${y}" ${y === payrollSelYr ? 'selected' : ''}>${y}</option>`).join('')}
+                    </select>
+                    <label>Month:</label>
+                    <select id="payroll-month-selector" onchange="renderPayroll()">
+                        ${payrollMonthsForYr.map(m => {
+                            const mNum = parseInt(m.split('-')[1]);
+                            return `<option value="${m}" ${String(mNum).padStart(2,'0') === payrollSelMth ? 'selected' : ''}>${monthNames[mNum-1]}</option>`;
+                        }).join('')}
                     </select>
                 `;
             } else if (currentTab === 'key-accounts') {
@@ -1379,6 +1395,14 @@
                 ? 'All figures are gross amounts including tax'
                 : 'All figures are net amounts before tax';
             renderMonthlyOverview();
+        }
+
+        function handlePayrollYearChange() {
+            const yr = document.getElementById('payroll-year-selector').value;
+            const payrollMonths = getCompleteMonths().filter(m => m.startsWith(yr));
+            // Re-render filter bar to update month options, then render
+            renderFilterBar();
+            renderPayroll();
         }
 
         function handleSRLVToggle() {
@@ -2326,17 +2350,24 @@
             const pd = processedData.payroll;
             if (!pd || !pd.monthKeys) return;
 
-            const selectedYear = document.getElementById('payroll-year-selector')?.value || new Date().getFullYear().toString();
+            const selectedMonthKey = document.getElementById('payroll-month-selector')?.value || getCompleteMonths()[0];
+            if (!selectedMonthKey) return;
+            const [selY, selM] = selectedMonthKey.split('-').map(Number);
+            const selectedYear = selY.toString();
+
             const now = getCurrentDate();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth() + 1;
+
+            // Find index for selected month
+            const selIdx = pd.monthKeys.indexOf(selectedMonthKey);
 
             // Filter month indices for selected year (complete months only)
             const yearIndices = [];
             pd.monthKeys.forEach((mk, idx) => {
                 if (!mk) return;
                 const [y, m] = mk.split('-').map(Number);
-                if (y !== parseInt(selectedYear)) return;
+                if (y !== selY) return;
                 if (y > currentYear) return;
                 if (y === currentYear && m >= currentMonth) return;
                 yearIndices.push(idx);
@@ -2352,40 +2383,49 @@
             });
             const last12 = allCompleteIndices.slice(-12);
 
-            // Compute totals for selected year
+            // Prior year index for YoY
+            const priorMonthKey = getMonthKey(selM, selY - 1);
+            const priorIdx = pd.monthKeys.indexOf(priorMonthKey);
+
+            // Helper to get value at index
+            const valAt = (arr, idx) => (arr && idx >= 0 && idx < arr.length) ? (arr[idx] || 0) : 0;
+
+            // Compute totals for selected month and prior year month
             const divNames = ['OFFICE', 'PRODUCTION', 'OP SUPPORT', 'CONSULTANTS'];
-            const divTotals = {};
-            let grandTotal = 0;
+            const divColors = { 'OFFICE': '#134F5C', 'PRODUCTION': '#d4a843', 'OP SUPPORT': '#76A5AF', 'CONSULTANTS': '#c43c3c' };
+
+            let monthPayroll = 0, priorMonthPayroll = 0;
             divNames.forEach(name => {
-                const arr = pd.divisions[name] || [];
-                const total = yearIndices.reduce((s, i) => s + (arr[i] || 0), 0);
-                divTotals[name] = total;
-                grandTotal += total;
+                monthPayroll += valAt(pd.divisions[name], selIdx);
+                priorMonthPayroll += valAt(pd.divisions[name], priorIdx);
             });
 
-            // Revenue for selected year
-            const totalRevenue = yearIndices.reduce((s, idx) => {
-                const mk = pd.monthKeys[idx];
-                return s + (processedData.monthlyRevenue[mk]?.total || 0);
-            }, 0);
+            // Revenue for selected month
+            const monthRevenue = processedData.monthlyRevenue[selectedMonthKey]?.total || 0;
+            const priorRevenue = processedData.monthlyRevenue[priorMonthKey]?.total || 0;
 
-            // Production metrics
+            // Production metrics for selected month
             const pp = pd.production;
-            const pastryPayrollTotal = yearIndices.reduce((s, i) => s + (pp.pastryPayroll?.[i] || 0), 0);
-            const bakeryPayrollTotal = yearIndices.reduce((s, i) => s + (pp.bakeryPayroll?.[i] || 0), 0);
-            const prodPayrollTotal = pastryPayrollTotal + bakeryPayrollTotal;
-            const totalStaff = (pp.pastryStaff && pp.bakeryStaff) ?
-                yearIndices.reduce((s, i) => s + Math.max((pp.pastryStaff[i] || 0) + (pp.bakeryStaff[i] || 0), 0), 0) / Math.max(yearIndices.length, 1) : 0;
-            const revPerStaff = totalStaff > 0 ? totalRevenue / totalStaff / Math.max(yearIndices.length, 1) : 0;
-            const payrollPct = totalRevenue > 0 ? (grandTotal / totalRevenue * 100).toFixed(1) : '—';
-            const costPerProdStaff = totalStaff > 0 ? prodPayrollTotal / totalStaff / Math.max(yearIndices.length, 1) : 0;
+            const monthProdStaff = valAt(pp.pastryStaff, selIdx) + valAt(pp.bakeryStaff, selIdx);
+            const monthProdPayroll = valAt(pp.pastryPayroll, selIdx) + valAt(pp.bakeryPayroll, selIdx);
+            const revPerStaff = monthProdStaff > 0 ? monthRevenue / monthProdStaff : 0;
+            const costPerStaff = monthProdStaff > 0 ? monthProdPayroll / monthProdStaff : 0;
+            const payrollPct = monthRevenue > 0 ? (monthPayroll / monthRevenue * 100).toFixed(1) : '—';
+
+            // YoY
+            const payrollYoY = priorMonthPayroll > 0 ? ((monthPayroll - priorMonthPayroll) / priorMonthPayroll * 100).toFixed(1) : null;
+            const yoyClass = payrollYoY !== null ? (parseFloat(payrollYoY) <= 0 ? 'positive' : 'negative') : '';
+            const yoySign = payrollYoY !== null ? (parseFloat(payrollYoY) > 0 ? '+' : '') : '';
+
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const selLabel = `${monthNames[selM - 1]} ${selectedYear}`;
 
             // KPI cards
             document.getElementById('payroll-kpi-grid').innerHTML = `
                 <div class="kpi-card">
-                    <h3>Total Payroll (${selectedYear})</h3>
-                    <div class="value">${formatCurrency(grandTotal)}</div>
-                    <div class="subtitle">${yearIndices.length} months</div>
+                    <h3>Total Payroll — ${selLabel}</h3>
+                    <div class="value">${formatCurrency(monthPayroll)}</div>
+                    <div class="subtitle">${monthProdStaff} production staff</div>
                 </div>
                 <div class="kpi-card">
                     <h3>Payroll % of Revenue</h3>
@@ -2393,14 +2433,14 @@
                     <div class="subtitle">Target: 30-35%</div>
                 </div>
                 <div class="kpi-card">
-                    <h3>Avg Revenue / Prod Staff</h3>
+                    <h3>Revenue / Prod Staff</h3>
                     <div class="value">${formatCurrency(revPerStaff)}</div>
-                    <div class="subtitle">per month</div>
+                    <div class="subtitle">${monthProdStaff} staff this month</div>
                 </div>
-                <div class="kpi-card">
-                    <h3>Avg Cost / Prod Staff</h3>
-                    <div class="value">${formatCurrency(costPerProdStaff)}</div>
-                    <div class="subtitle">per month</div>
+                <div class="kpi-card ${yoyClass}">
+                    <h3>Payroll YoY Change</h3>
+                    <div class="value">${payrollYoY !== null ? yoySign + payrollYoY + '%' : '—'}</div>
+                    <div class="subtitle">vs ${monthNames[selM - 1]} ${selY - 1}</div>
                 </div>
             `;
 
@@ -2409,10 +2449,9 @@
                 const [y, m] = pd.monthKeys[i].split('-');
                 return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
             });
-            const divColors = { 'OFFICE': '#134F5C', 'PRODUCTION': '#d4a843', 'OP SUPPORT': '#76A5AF', 'CONSULTANTS': '#c43c3c' };
             const trendDatasets = divNames.map(name => ({
                 label: name.charAt(0) + name.slice(1).toLowerCase(),
-                data: last12.map(i => (pd.divisions[name] || [])[i] || 0),
+                data: last12.map(i => valAt(pd.divisions[name], i)),
                 backgroundColor: divColors[name],
                 borderWidth: 0
             }));
@@ -2434,10 +2473,10 @@
                 }
             });
 
-            // === CHART 2: Division split doughnut ===
-            const splitLabels = divNames.map(n => n.charAt(0) + n.slice(1).toLowerCase());
-            const splitData = divNames.map(n => divTotals[n]);
+            // === CHART 2: Division split doughnut (selected month) ===
+            const splitData = divNames.map(n => valAt(pd.divisions[n], selIdx));
             const splitTotal = splitData.reduce((s, v) => s + v, 0);
+            const splitLabels = divNames.map(n => n.charAt(0) + n.slice(1).toLowerCase());
 
             if (payrollSplitChart) payrollSplitChart.destroy();
             payrollSplitChart = new Chart(document.getElementById('payroll-split-chart').getContext('2d'), {
@@ -2453,7 +2492,7 @@
                         legend: { position: 'bottom', labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 } },
                         datalabels: {
                             formatter: (value) => {
-                                const pct = (value / splitTotal * 100).toFixed(1);
+                                const pct = splitTotal > 0 ? (value / splitTotal * 100).toFixed(1) : 0;
                                 return parseFloat(pct) < 5 ? '' : `${pct}%`;
                             },
                             color: '#fff',
@@ -2464,7 +2503,7 @@
                 plugins: [ChartDataLabels]
             });
 
-            // === CHART 3 & 4: Production efficiency ===
+            // === CHART 3 & 4: Production efficiency (last 12 months) ===
             const effLabels = last12.map(i => {
                 const [y, m] = pd.monthKeys[i].split('-');
                 return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
@@ -2477,8 +2516,8 @@
                     data: {
                         labels: effLabels,
                         datasets: [
-                            { label: 'Payroll', data: last12.map(i => pp[payrollKey]?.[i] || 0), backgroundColor: payrollColor, borderWidth: 0, order: 2 },
-                            { label: 'Revenue', data: last12.map(i => pp[revenueKey]?.[i] || 0), backgroundColor: revenueColor, borderWidth: 0, order: 1 }
+                            { label: 'Payroll', data: last12.map(i => valAt(pp[payrollKey], i)), backgroundColor: payrollColor, borderWidth: 0, order: 2 },
+                            { label: 'Revenue', data: last12.map(i => valAt(pp[revenueKey], i)), backgroundColor: revenueColor, borderWidth: 0, order: 1 }
                         ]
                     },
                     options: {
@@ -2498,17 +2537,17 @@
             pastryEffChart = makeEffChart('pastry-efficiency-chart', 'pastryPayroll', 'srlvRevenue', '#c43c3c', '#d4a843', pastryEffChart);
             bakeryEffChart = makeEffChart('bakery-efficiency-chart', 'bakeryPayroll', 'otherRevenue', '#c43c3c', '#45818E', bakeryEffChart);
 
-            // === TABLE: Department breakdown ===
-            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            let tableHtml = '<thead><tr><th style="position:sticky;left:0;background:var(--cyan-dark1);z-index:2;">Department</th><th class="number">Total</th>';
+            // === TABLE: Department breakdown for selected year ===
+            let tableHtml = '<thead><tr><th style="position:sticky;left:0;background:var(--cyan-dark1);z-index:2;">Department</th><th class="number">YTD Total</th>';
             yearIndices.forEach(idx => {
                 const [y, m] = pd.monthKeys[idx].split('-');
                 tableHtml += `<th class="number">${monthNames[parseInt(m)-1]} ${y.slice(2)}</th>`;
             });
             tableHtml += '</tr></thead><tbody>';
 
-            // Grand total row first
-            const grandByMonth = yearIndices.map(idx => divNames.reduce((s, n) => s + ((pd.divisions[n] || [])[idx] || 0), 0));
+            // Grand total
+            const grandTotal = yearIndices.reduce((s, idx) => s + divNames.reduce((ds, n) => ds + valAt(pd.divisions[n], idx), 0), 0);
+            const grandByMonth = yearIndices.map(idx => divNames.reduce((s, n) => s + valAt(pd.divisions[n], idx), 0));
             tableHtml += `<tr class="total-row"><td style="position:sticky;left:0;background:var(--cyan-dark2);">TOTAL PAYROLL</td><td class="number">${formatCurrency(grandTotal)}</td>${grandByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
 
             // Division sections
@@ -2518,10 +2557,8 @@
             });
 
             divNames.forEach(divName => {
-                // Section header
                 tableHtml += `<tr class="section-header-row"><td colspan="${yearIndices.length + 2}">${divName}</td></tr>`;
 
-                // Department rows
                 (deptsByDiv[divName] || []).forEach(dept => {
                     const total = yearIndices.reduce((s, i) => s + (dept.values[i] || 0), 0);
                     if (total === 0) return;
@@ -2529,10 +2566,9 @@
                     tableHtml += `<tr><td style="position:sticky;left:0;background:inherit;">${dept.dept}</td><td class="number">${formatCurrency(total)}</td>${byMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
                 });
 
-                // Division subtotal
                 const divArr = pd.divisions[divName] || [];
-                const divTotal = yearIndices.reduce((s, i) => s + (divArr[i] || 0), 0);
-                const divByMonth = yearIndices.map(i => divArr[i] || 0);
+                const divTotal = yearIndices.reduce((s, i) => s + valAt(divArr, i), 0);
+                const divByMonth = yearIndices.map(i => valAt(divArr, i));
                 tableHtml += `<tr style="font-weight:700;background:#f0f6f7;"><td style="position:sticky;left:0;background:#f0f6f7;">Subtotal ${divName.charAt(0) + divName.slice(1).toLowerCase()}</td><td class="number">${formatCurrency(divTotal)}</td>${divByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
             });
 
