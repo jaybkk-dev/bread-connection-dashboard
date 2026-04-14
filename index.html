@@ -973,7 +973,7 @@
                 const salesType = row[3];
                 const accountName = row[4];
                 const netAmount = parseNumber(row[6]);
-                const grossAmount = parseNumber(row[13]); // Col N = amount including tax
+                const vatAmount = parseNumber(row[8]); // Col I = VAT amount only
 
                 if (!month || !year || !netAmount) return;
 
@@ -1025,7 +1025,7 @@
                 }
 
                 processedData.monthlyRevenue[monthKey].total += netAmount;
-                processedData.monthlyRevenue[monthKey].totalWithTax += (grossAmount || netAmount);
+                processedData.monthlyRevenue[monthKey].totalWithTax += (netAmount + vatAmount);
             });
 
             // Sort top accounts

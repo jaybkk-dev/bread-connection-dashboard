@@ -362,7 +362,7 @@
                 if (!month || !year) return;
                 const monthKey = getMonthKey(month, year);
                 const amount = parseNumber(row[6]);
-                const amountWithTax = parseNumber(row[13]);
+                const vatAmount = parseNumber(row[8]);
                 const salesType = (row[4] || '').toString().trim().toUpperCase();
                 const accountName = (row[3] || '').toString().trim().toUpperCase();
                 const transactionDate = row[2];
@@ -374,7 +374,7 @@
                 }
                 const d = processedData.monthlyRevenue[monthKey];
                 d.total += amount;
-                d.totalWithTax += amountWithTax;
+                d.totalWithTax += (amount + vatAmount);
                 d.accounts[accountName] = (d.accounts[accountName] || 0) + amount;
                 d.byChannel[salesType] = (d.byChannel[salesType] || 0) + amount;
 
