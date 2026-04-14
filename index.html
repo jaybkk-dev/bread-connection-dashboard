@@ -728,7 +728,7 @@
                 <div class="chart-container" style="margin-bottom:0;height:420px;">
                     <h3 id="payroll-prod-title">Production — Payroll vs Revenue</h3>
                     <canvas id="production-chart"></canvas>
-                    <div id="production-stats" style="display:flex;gap:30px;justify-content:center;padding:8px 0;font-size:12px;color:var(--cyan-base);"></div>
+                    <div id="production-stats" style="display:flex;gap:30px;justify-content:center;padding:10px 0;font-size:13px;color:var(--cyan-dark2);"></div>
                 </div>
                 <div class="table-container" style="margin-top:20px;">
                     <div class="table-scroll">
@@ -2507,25 +2507,34 @@
                     labels: periodLabels,
                     datasets: [
                         { label: 'Pastry Revenue (SRLV)', data: pastryRevData, backgroundColor: '#d4a843', stack: 'pastry', borderWidth: 0 },
-                        { label: 'Pastry Payroll', data: pastryPayData, backgroundColor: 'rgba(212, 168, 67, 0.35)', stack: 'pastry', borderWidth: 1, borderColor: '#d4a843' },
+                        { label: 'Pastry Payroll', data: pastryPayData, backgroundColor: '#B45D43', stack: 'pastry', borderWidth: 0 },
                         { label: 'Bakery Revenue (Other)', data: bakeryRevData, backgroundColor: '#45818E', stack: 'bakery', borderWidth: 0 },
-                        { label: 'Bakery Payroll', data: bakeryPayData, backgroundColor: 'rgba(69, 129, 142, 0.35)', stack: 'bakery', borderWidth: 1, borderColor: '#45818E' },
+                        { label: 'Bakery Payroll', data: bakeryPayData, backgroundColor: '#744848', stack: 'bakery', borderWidth: 0 },
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom', labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 } },
+                        legend: { position: 'bottom', labels: { font: { size: 13, weight: '500', family: "'Inter', sans-serif" }, padding: 12, boxWidth: 14, usePointStyle: false } },
                         datalabels: { display: false },
                         tooltip: {
+                            mode: 'nearest',
+                            intersect: true,
                             callbacks: {
-                                afterBody: function(items) {
-                                    const idx = items[0].dataIndex;
-                                    const pPay = pastryPayData[idx], pRev = pastryRevData[idx];
-                                    const bPay = bakeryPayData[idx], bRev = bakeryRevData[idx];
-                                    const pPct = pRev > 0 ? (pPay / pRev * 100).toFixed(1) : '—';
-                                    const bPct = bRev > 0 ? (bPay / bRev * 100).toFixed(1) : '—';
-                                    return `\nPastry payroll: ${pPct}% of SRLV revenue\nBakery payroll: ${bPct}% of other revenue`;
+                                label: function(ctx) {
+                                    const val = ctx.raw;
+                                    const idx = ctx.dataIndex;
+                                    const dsIdx = ctx.datasetIndex;
+                                    let line = `${ctx.dataset.label}: ฿${Math.round(val).toLocaleString('en-US')}`;
+                                    // If it's a payroll bar, show % of corresponding revenue
+                                    if (dsIdx === 1) { // Pastry Payroll
+                                        const rev = pastryRevData[idx];
+                                        if (rev > 0) line += ` (${(val / rev * 100).toFixed(1)}% of revenue)`;
+                                    } else if (dsIdx === 3) { // Bakery Payroll
+                                        const rev = bakeryRevData[idx];
+                                        if (rev > 0) line += ` (${(val / rev * 100).toFixed(1)}% of revenue)`;
+                                    }
+                                    return line;
                                 }
                             }
                         }
