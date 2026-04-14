@@ -318,6 +318,14 @@
         #key-accounts .chart-container h3 { color: var(--accent-charcoal); }
         #key-accounts .table-container { border-top: 3px solid var(--accent-charcoal); }
 
+        /* Payroll — teal/green accent */
+        #payroll .kpi-card h3 { color: var(--positive); }
+        #payroll .kpi-card { border-top: 3px solid var(--positive); }
+        #payroll .chart-container { border-top: 3px solid var(--positive); }
+        #payroll .chart-container h3 { color: var(--cyan-dark2); }
+        #payroll .table-container { border-top: 3px solid var(--positive); }
+        #payroll .section-header-row td { background-color: #d4edda; color: var(--positive); border-left: 4px solid var(--positive); }
+
         /* KPI Cards */
         .kpi-grid {
             display: grid;
@@ -616,6 +624,7 @@
             <button class="tab-button" data-tab="profit-loss">Accrual P&L</button>
             <button class="tab-button" data-tab="expenses">Expense Analysis</button>
             <button class="tab-button" data-tab="key-accounts">Key Accounts</button>
+            <button class="tab-button" data-tab="payroll">Payroll</button>
         </div>
 
         <!-- Filter Bar -->
@@ -702,6 +711,36 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tab 6: Payroll -->
+            <div class="tab-content" id="payroll">
+                <div class="kpi-grid" id="payroll-kpi-grid"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div class="chart-container" style="margin-bottom:0;height:380px;">
+                        <h3>Payroll by Division — Last 12 Months</h3>
+                        <canvas id="payroll-trend-chart"></canvas>
+                    </div>
+                    <div class="chart-container" style="margin-bottom:0;height:380px;">
+                        <h3>Division Split</h3>
+                        <canvas id="payroll-split-chart"></canvas>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div class="chart-container" style="margin-bottom:0;height:320px;">
+                        <h3>Pastry — Payroll vs SRLV Revenue</h3>
+                        <canvas id="pastry-efficiency-chart"></canvas>
+                    </div>
+                    <div class="chart-container" style="margin-bottom:0;height:320px;">
+                        <h3>Bakery — Payroll vs Other Revenue</h3>
+                        <canvas id="bakery-efficiency-chart"></canvas>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table id="payroll-table"></table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -716,7 +755,8 @@
             EXP: 'EXP',
             PC_SUMMARY: 'PC_SUMMARY',
             STATEMENTS: 'STATEMENTS',
-            CLIENTS: 'CLIENTS'
+            CLIENTS: 'CLIENTS',
+            PAYROLL: 'PAYROLL'
         };
 
         // Chart of Accounts Hierarchy
@@ -839,7 +879,8 @@
             exp: [],
             pc_summary: [],
             statements: [],
-            clients: []
+            clients: [],
+            payroll: []
         };
 
         let processedData = {
@@ -938,15 +979,16 @@
 
         async function loadAllData() {
             try {
-                const [inc, exp, pc_summary, statements, clients] = await Promise.all([
+                const [inc, exp, pc_summary, statements, clients, payroll] = await Promise.all([
                     fetchSheetData(SHEET_TABS.INC),
                     fetchSheetData(SHEET_TABS.EXP),
                     fetchSheetData(SHEET_TABS.PC_SUMMARY),
                     fetchSheetData(SHEET_TABS.STATEMENTS),
-                    fetchSheetData(SHEET_TABS.CLIENTS)
+                    fetchSheetData(SHEET_TABS.CLIENTS),
+                    fetchSheetData(SHEET_TABS.PAYROLL)
                 ]);
 
-                allData = { inc, exp, pc_summary, statements, clients };
+                allData = { inc, exp, pc_summary, statements, clients, payroll };
                 hideError();
                 return true;
             } catch (error) {
@@ -1182,6 +1224,7 @@
             processPCData();
             processClientData();
             processCashFlowData();
+            processPayrollData();
         }
 
         // ============================================================================
@@ -1266,6 +1309,13 @@
                             const mNum = m.split('-')[1];
                             return `<option value="${m}" ${mNum === expSelectedMth ? 'selected' : ''}>${monthNames[parseInt(mNum) - 1]}</option>`;
                         }).join('')}
+                    </select>
+                `;
+            } else if (currentTab === 'payroll') {
+                html = `
+                    <label>Year:</label>
+                    <select id="payroll-year-selector" onchange="renderPayroll()">
+                        ${getAvailableYears().map(y => `<option value="${y}">${y}</option>`).join('')}
                     </select>
                 `;
             } else if (currentTab === 'key-accounts') {
@@ -1387,6 +1437,9 @@
                     break;
                 case 'key-accounts':
                     renderKeyAccounts();
+                    break;
+                case 'payroll':
+                    renderPayroll();
                     break;
             }
         }
@@ -2197,6 +2250,294 @@
 
             tableHtml += '</tbody>';
             document.getElementById('key-accounts-table').innerHTML = tableHtml;
+        }
+
+        // ============================================================================
+        // TAB 6: PAYROLL
+        // ============================================================================
+
+        let payrollTrendChart = null, payrollSplitChart = null;
+        let pastryEffChart = null, bakeryEffChart = null;
+
+        function processPayrollData() {
+            // PAYROLL sheet: row 0 = headers (month labels), rows 1-27 = data
+            // Structure matches what write_payroll.py generated
+            processedData.payroll = { months: [], divisions: {}, departments: {}, production: {} };
+            const pdata = allData.payroll;
+            if (!pdata || pdata.length < 2) return;
+
+            const headers = pdata[0]; // [DATA FROM, DIVISION, DEPARTMENT, Feb 24, Mar 24, ...]
+            const monthLabels = headers.slice(3);
+
+            // Parse month labels to YYYY-MM keys
+            const monthMap = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const monthKeys = monthLabels.map(label => {
+                const parts = label.split(' ');
+                if (parts.length !== 2) return null;
+                const mi = monthMap.indexOf(parts[0]) + 1;
+                const yr = 2000 + parseInt(parts[1]);
+                return mi > 0 && yr ? getMonthKey(mi, yr) : null;
+            });
+            processedData.payroll.monthKeys = monthKeys;
+
+            // Parse rows into structured data
+            const pn = (v) => {
+                if (!v || v === '') return 0;
+                return parseFloat(v.toString().replace(/,/g, '')) || 0;
+            };
+
+            // Department rows (rows 1-15 = indices 1-15 in pdata)
+            const deptRows = {};
+            for (let i = 1; i <= 15; i++) {
+                if (i >= pdata.length) break;
+                const row = pdata[i];
+                if (!row || row.length < 3) continue;
+                const div = (row[1] || '').trim();
+                const dept = (row[2] || '').trim();
+                if (!dept) continue;
+                const key = `${div}|${dept}`;
+                if (!deptRows[key]) deptRows[key] = { div, dept, values: monthKeys.map(() => 0) };
+                monthKeys.forEach((mk, idx) => {
+                    deptRows[key].values[idx] += pn(row[idx + 3]);
+                });
+            }
+            processedData.payroll.departments = deptRows;
+
+            // Division totals (rows 17-20 = indices 17-20)
+            const divNames = ['OFFICE', 'PRODUCTION', 'OP SUPPORT', 'CONSULTANTS'];
+            divNames.forEach((name, di) => {
+                const rowIdx = 17 + di;
+                if (rowIdx >= pdata.length) return;
+                const row = pdata[rowIdx];
+                processedData.payroll.divisions[name] = monthKeys.map((mk, idx) => pn(row?.[idx + 3]));
+            });
+
+            // Production efficiency (rows 22-27 = indices 22-27)
+            const prodKeys = ['pastryPayroll', 'pastryStaff', 'srlvRevenue', 'bakeryPayroll', 'bakeryStaff', 'otherRevenue'];
+            prodKeys.forEach((key, ki) => {
+                const rowIdx = 22 + ki;
+                if (rowIdx >= pdata.length) return;
+                const row = pdata[rowIdx];
+                processedData.payroll.production[key] = monthKeys.map((mk, idx) => pn(row?.[idx + 3]));
+            });
+        }
+
+        function renderPayroll() {
+            const pd = processedData.payroll;
+            if (!pd || !pd.monthKeys) return;
+
+            const selectedYear = document.getElementById('payroll-year-selector')?.value || new Date().getFullYear().toString();
+            const now = getCurrentDate();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+
+            // Filter month indices for selected year (complete months only)
+            const yearIndices = [];
+            pd.monthKeys.forEach((mk, idx) => {
+                if (!mk) return;
+                const [y, m] = mk.split('-').map(Number);
+                if (y !== parseInt(selectedYear)) return;
+                if (y > currentYear) return;
+                if (y === currentYear && m >= currentMonth) return;
+                yearIndices.push(idx);
+            });
+
+            // Last 12 complete months for charts
+            const allCompleteIndices = [];
+            pd.monthKeys.forEach((mk, idx) => {
+                if (!mk) return;
+                const [y, m] = mk.split('-').map(Number);
+                if (y > currentYear || (y === currentYear && m >= currentMonth)) return;
+                allCompleteIndices.push(idx);
+            });
+            const last12 = allCompleteIndices.slice(-12);
+
+            // Compute totals for selected year
+            const divNames = ['OFFICE', 'PRODUCTION', 'OP SUPPORT', 'CONSULTANTS'];
+            const divTotals = {};
+            let grandTotal = 0;
+            divNames.forEach(name => {
+                const arr = pd.divisions[name] || [];
+                const total = yearIndices.reduce((s, i) => s + (arr[i] || 0), 0);
+                divTotals[name] = total;
+                grandTotal += total;
+            });
+
+            // Revenue for selected year
+            const totalRevenue = yearIndices.reduce((s, idx) => {
+                const mk = pd.monthKeys[idx];
+                return s + (processedData.monthlyRevenue[mk]?.total || 0);
+            }, 0);
+
+            // Production metrics
+            const pp = pd.production;
+            const pastryPayrollTotal = yearIndices.reduce((s, i) => s + (pp.pastryPayroll?.[i] || 0), 0);
+            const bakeryPayrollTotal = yearIndices.reduce((s, i) => s + (pp.bakeryPayroll?.[i] || 0), 0);
+            const prodPayrollTotal = pastryPayrollTotal + bakeryPayrollTotal;
+            const totalStaff = (pp.pastryStaff && pp.bakeryStaff) ?
+                yearIndices.reduce((s, i) => s + Math.max((pp.pastryStaff[i] || 0) + (pp.bakeryStaff[i] || 0), 0), 0) / Math.max(yearIndices.length, 1) : 0;
+            const revPerStaff = totalStaff > 0 ? totalRevenue / totalStaff / Math.max(yearIndices.length, 1) : 0;
+            const payrollPct = totalRevenue > 0 ? (grandTotal / totalRevenue * 100).toFixed(1) : '—';
+            const costPerProdStaff = totalStaff > 0 ? prodPayrollTotal / totalStaff / Math.max(yearIndices.length, 1) : 0;
+
+            // KPI cards
+            document.getElementById('payroll-kpi-grid').innerHTML = `
+                <div class="kpi-card">
+                    <h3>Total Payroll (${selectedYear})</h3>
+                    <div class="value">${formatCurrency(grandTotal)}</div>
+                    <div class="subtitle">${yearIndices.length} months</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Payroll % of Revenue</h3>
+                    <div class="value">${payrollPct}%</div>
+                    <div class="subtitle">Target: 30-35%</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Avg Revenue / Prod Staff</h3>
+                    <div class="value">${formatCurrency(revPerStaff)}</div>
+                    <div class="subtitle">per month</div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Avg Cost / Prod Staff</h3>
+                    <div class="value">${formatCurrency(costPerProdStaff)}</div>
+                    <div class="subtitle">per month</div>
+                </div>
+            `;
+
+            // === CHART 1: Payroll trend stacked bar (last 12 months) ===
+            const trendLabels = last12.map(i => {
+                const [y, m] = pd.monthKeys[i].split('-');
+                return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+            const divColors = { 'OFFICE': '#134F5C', 'PRODUCTION': '#d4a843', 'OP SUPPORT': '#76A5AF', 'CONSULTANTS': '#c43c3c' };
+            const trendDatasets = divNames.map(name => ({
+                label: name.charAt(0) + name.slice(1).toLowerCase(),
+                data: last12.map(i => (pd.divisions[name] || [])[i] || 0),
+                backgroundColor: divColors[name],
+                borderWidth: 0
+            }));
+
+            if (payrollTrendChart) payrollTrendChart.destroy();
+            payrollTrendChart = new Chart(document.getElementById('payroll-trend-chart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: trendLabels, datasets: trendDatasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 } },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { stacked: true, ticks: { font: { size: 9 }, callback: v => '฿' + Math.round(v / 1000) + 'k' } }
+                    }
+                }
+            });
+
+            // === CHART 2: Division split doughnut ===
+            const splitLabels = divNames.map(n => n.charAt(0) + n.slice(1).toLowerCase());
+            const splitData = divNames.map(n => divTotals[n]);
+            const splitTotal = splitData.reduce((s, v) => s + v, 0);
+
+            if (payrollSplitChart) payrollSplitChart.destroy();
+            payrollSplitChart = new Chart(document.getElementById('payroll-split-chart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: splitLabels,
+                    datasets: [{ data: splitData, backgroundColor: divNames.map(n => divColors[n]), borderColor: '#fff', borderWidth: 2 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    layout: { padding: 8 },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 } },
+                        datalabels: {
+                            formatter: (value) => {
+                                const pct = (value / splitTotal * 100).toFixed(1);
+                                return parseFloat(pct) < 5 ? '' : `${pct}%`;
+                            },
+                            color: '#fff',
+                            font: { size: 11, weight: '600', family: "'Inter', sans-serif" }
+                        }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+
+            // === CHART 3 & 4: Production efficiency ===
+            const effLabels = last12.map(i => {
+                const [y, m] = pd.monthKeys[i].split('-');
+                return new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+
+            const makeEffChart = (canvasId, payrollKey, revenueKey, payrollColor, revenueColor, existingChart) => {
+                if (existingChart) existingChart.destroy();
+                return new Chart(document.getElementById(canvasId).getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: effLabels,
+                        datasets: [
+                            { label: 'Payroll', data: last12.map(i => pp[payrollKey]?.[i] || 0), backgroundColor: payrollColor, borderWidth: 0, order: 2 },
+                            { label: 'Revenue', data: last12.map(i => pp[revenueKey]?.[i] || 0), backgroundColor: revenueColor, borderWidth: 0, order: 1 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { size: 10, family: "'Inter', sans-serif" }, padding: 6, boxWidth: 10 } },
+                            datalabels: { display: false }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+                            y: { ticks: { font: { size: 9 }, callback: v => '฿' + Math.round(v / 1000) + 'k' } }
+                        }
+                    }
+                });
+            };
+
+            pastryEffChart = makeEffChart('pastry-efficiency-chart', 'pastryPayroll', 'srlvRevenue', '#c43c3c', '#d4a843', pastryEffChart);
+            bakeryEffChart = makeEffChart('bakery-efficiency-chart', 'bakeryPayroll', 'otherRevenue', '#c43c3c', '#45818E', bakeryEffChart);
+
+            // === TABLE: Department breakdown ===
+            const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            let tableHtml = '<thead><tr><th style="position:sticky;left:0;background:var(--cyan-dark1);z-index:2;">Department</th><th class="number">Total</th>';
+            yearIndices.forEach(idx => {
+                const [y, m] = pd.monthKeys[idx].split('-');
+                tableHtml += `<th class="number">${monthNames[parseInt(m)-1]} ${y.slice(2)}</th>`;
+            });
+            tableHtml += '</tr></thead><tbody>';
+
+            // Grand total row first
+            const grandByMonth = yearIndices.map(idx => divNames.reduce((s, n) => s + ((pd.divisions[n] || [])[idx] || 0), 0));
+            tableHtml += `<tr class="total-row"><td style="position:sticky;left:0;background:var(--cyan-dark2);">TOTAL PAYROLL</td><td class="number">${formatCurrency(grandTotal)}</td>${grandByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
+
+            // Division sections
+            const deptsByDiv = { 'OFFICE': [], 'OP SUPPORT': [], 'PRODUCTION': [], 'CONSULTANTS': [] };
+            Object.entries(pd.departments).forEach(([key, data]) => {
+                if (deptsByDiv[data.div]) deptsByDiv[data.div].push(data);
+            });
+
+            divNames.forEach(divName => {
+                // Section header
+                tableHtml += `<tr class="section-header-row"><td colspan="${yearIndices.length + 2}">${divName}</td></tr>`;
+
+                // Department rows
+                (deptsByDiv[divName] || []).forEach(dept => {
+                    const total = yearIndices.reduce((s, i) => s + (dept.values[i] || 0), 0);
+                    if (total === 0) return;
+                    const byMonth = yearIndices.map(i => dept.values[i] || 0);
+                    tableHtml += `<tr><td style="position:sticky;left:0;background:inherit;">${dept.dept}</td><td class="number">${formatCurrency(total)}</td>${byMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
+                });
+
+                // Division subtotal
+                const divArr = pd.divisions[divName] || [];
+                const divTotal = yearIndices.reduce((s, i) => s + (divArr[i] || 0), 0);
+                const divByMonth = yearIndices.map(i => divArr[i] || 0);
+                tableHtml += `<tr style="font-weight:700;background:#f0f6f7;"><td style="position:sticky;left:0;background:#f0f6f7;">Subtotal ${divName.charAt(0) + divName.slice(1).toLowerCase()}</td><td class="number">${formatCurrency(divTotal)}</td>${divByMonth.map(v => `<td class="number">${formatCurrency(v)}</td>`).join('')}</tr>`;
+            });
+
+            tableHtml += '</tbody>';
+            document.getElementById('payroll-table').innerHTML = tableHtml;
         }
 
         // ============================================================================
